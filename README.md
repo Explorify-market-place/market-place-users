@@ -1,36 +1,292 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📍 ExplorifyTrips - Travel Planning Platform
 
-## Getting Started
+> A modern travel planning and booking platform built with Next.js 14, AWS DynamoDB, and NextAuth.
 
-First, run the development server:
+## 🌐 Project Ecosystem
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+This project is part of a dual-platform ecosystem:
+
+- **Main Website**: [explorifytrips.com](https://explorifytrips.com) - Customer-facing platform for browsing and booking travel plans
+- **Vendor Portal**: [vendor.explorifytrips.com](https://vendor.explorifytrips.com) - Separate platform for travel vendors to manage their offerings
+  - Repository: [github.com/Suryansh-Dey/market-place](https://github.com/Suryansh-Dey/market-place)
+
+## 🏗️ Architecture Overview
+
+### Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Authentication**: NextAuth.js
+- **Database**: AWS DynamoDB
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Language**: TypeScript
+- **Deployment**: Vercel (recommended)
+
+### Key Features
+
+- 🔐 Multi-role authentication (User, Vendor, Admin)
+- 🌓 Dark mode support
+- 📱 Responsive design
+- 🗺️ Travel plan browsing and booking
+- 💳 Payment integration ready
+- 🔒 Secure session management
+
+## 📦 Database Schema
+
+### DynamoDB Tables
+
+#### 1. **Users Table** (`DYNAMODB_USERS_TABLE`)
+
+```typescript
+{
+  userId: string;           // Partition Key
+  name: string;
+  email: string;
+  password?: string;        // Optional - for email/password auth
+  image?: string;
+  role: "user" | "vendor" | "admin";
+  vendorVerified: boolean;
+  vendorInfo?: {
+    organizationName?: string;
+    address?: string;
+    phoneNumber?: string;
+  };
+  createdAt: string;
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### 2. **TravelPlans Table** (`DYNAMODB_PLANS_TABLE`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```typescript
+{
+  planId: string;          // Partition Key
+  vendorId: string;
+  name: string;
+  image: string;
+  route: string[];
+  description: string;
+  price: number;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+}
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### 3. **Bookings Table** (`DYNAMODB_BOOKINGS_TABLE`)
 
-## Learn More
+```typescript
+{
+  bookingId: string; // Partition Key
+  planId: string;
+  userId: string;
+  dateBooked: string;
+  numPeople: number;
+  paymentStatus: "pending" | "completed" | "failed";
+  totalAmount: number;
+  createdAt: string;
+}
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js 18+
+- npm/yarn/pnpm
+- AWS Account with DynamoDB access
+- AWS Access Keys
 
-## Deploy on Vercel
+### Installation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Clone the repository**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   git clone https://github.com/yourusername/explorifytrips.git
+   cd explorifytrips
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+
+   Create a `.env.local` file in the root directory:
+
+   ```env
+   # AWS Configuration
+   AWS_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=your_access_key_id
+   AWS_SECRET_ACCESS_KEY=your_secret_access_key
+
+   # DynamoDB Tables
+   DYNAMODB_USERS_TABLE=Users
+   DYNAMODB_PLANS_TABLE=TravelPlans
+   DYNAMODB_BOOKINGS_TABLE=Bookings
+
+   # NextAuth Configuration
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_nextauth_secret_key_here
+
+   # OAuth Providers (if using)
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   ```
+
+4. **Run the development server**
+
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🔑 Authentication & Authorization
+
+### User Roles
+
+The platform supports three user roles:
+
+1. **User** (Default)
+
+   - Browse travel plans
+   - Make bookings
+   - Manage personal bookings
+   - Assigned when signing up from `explorifytrips.com`
+
+2. **Vendor**
+
+   - All user permissions
+   - Create and manage travel plans
+   - View bookings for their plans
+   - Assigned when signing up from `vendor.explorifytrips.com`
+   - Requires admin verification (`vendorVerified: true`)
+
+3. **Admin**
+   - Full system access
+   - Verify vendors
+   - Manage all users and plans
+   - Platform analytics
+
+### Role Assignment Logic
+
+```typescript
+// User role is determined by the origin domain:
+// - explorifytrips.com → role: "user"
+// - vendor.explorifytrips.com → role: "vendor"
+```
+
+## 📁 Project Structure
+
+```
+explorifytrips/
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   ├── (auth)/            # Auth pages (sign-in, sign-up)
+│   ├── trips/             # Trips browsing page
+│   └── layout.tsx         # Root layout with ThemeProvider
+├── components/
+│   ├── common/            # Shared components
+│   │   └── Navbar.tsx     # Navigation bar
+│   ├── ui/                # shadcn/ui components
+│   ├── theme-provider.tsx # Dark mode provider
+│   └── mode-toggle.tsx    # Dark mode toggle
+├── lib/
+│   └── dynamodb.ts        # DynamoDB configuration
+├── public/                # Static assets
+└── .env.local            # Environment variables (create this)
+```
+
+## 🎨 UI Components
+
+This project uses [shadcn/ui](https://ui.shadcn.com/) for UI components. Components are installed individually:
+
+```bash
+# Install specific components
+npx shadcn@latest add button
+npx shadcn@latest add dropdown-menu
+npx shadcn@latest add card
+# ... etc
+```
+
+### Dark Mode
+
+Dark mode is implemented using `next-themes`:
+
+- Toggle component: `components/mode-toggle.tsx`
+- Provider: `components/theme-provider.tsx`
+- Supports: light, dark, and system preference
+
+## 🔧 Development Guidelines
+
+### Code Standards
+
+- Use TypeScript for type safety
+- Follow Next.js 14 App Router conventions
+- Use server components by default
+- Add `"use client"` only when necessary
+- Implement proper error handling
+- Use environment variables for sensitive data
+
+### Git Workflow
+
+1. Create feature branches from `main`
+2. Use descriptive commit messages
+3. Test thoroughly before creating PR
+4. Request code review before merging
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import project in Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+### Environment Variables for Production
+
+Ensure all `.env.local` variables are added to your deployment platform.
+
+## 🔐 Security Considerations
+
+- ✅ Never commit `.env.local` to version control
+- ✅ Use AWS IAM roles with minimum required permissions
+- ✅ Enable DynamoDB encryption at rest
+- ✅ Implement rate limiting on API routes
+- ✅ Validate all user inputs
+- ✅ Use HTTPS in production
+- ✅ Rotate AWS credentials regularly
+
+## 📚 Additional Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [NextAuth.js Documentation](https://next-auth.js.org/)
+- [AWS DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
+- [shadcn/ui Documentation](https://ui.shadcn.com/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 📞 Support
+
+For questions or issues, please contact:
+
+- Email: support@explorifytrips.com
+- GitHub Issues: [Create an issue](https://github.com/yourusername/explorifytrips/issues)
+
+---
+
+**Note**: This is the main customer-facing website. For vendor portal documentation, see the [market-place repository](https://github.com/Suryansh-Dey/market-place).
