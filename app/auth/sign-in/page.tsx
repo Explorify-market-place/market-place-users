@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -22,8 +22,7 @@ import {
 
 export default function SignInPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = "/trips"; // TODO: Change to desired post-auth redirect URL
 
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authMethod, setAuthMethod] = useState<"oauth" | "email">("oauth");
@@ -68,7 +67,7 @@ export default function SignInPage() {
       } else if (result?.url) {
         router.push(result.url);
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
@@ -133,8 +132,9 @@ export default function SignInPage() {
         setAuthMode("signin");
         setFormData({ name: "", email: formData.email, password: "" });
       }
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || "An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
