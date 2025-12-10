@@ -229,6 +229,23 @@ export async function getBookingById(bookingId: string): Promise<DynamoDBBooking
   }
 }
 
+export async function getBookingByPaymentId(razorpayPaymentId: string): Promise<DynamoDBBooking | null> {
+  try {
+    const command = new ScanCommand({
+      TableName: BOOKINGS_TABLE,
+      FilterExpression: "razorpayPaymentId = :paymentId",
+      ExpressionAttributeValues: {
+        ":paymentId": razorpayPaymentId,
+      },
+    });
+    const response = await dynamoDb.send(command);
+    return response.Items && response.Items.length > 0 ? response.Items[0] as DynamoDBBooking : null;
+  } catch (error) {
+    console.error("Error getting booking by payment ID:", error);
+    return null;
+  }
+}
+
 export async function updateBookingStatus(bookingId: string, paymentStatus: "pending" | "completed" | "failed"): Promise<void> {
   const command = new UpdateCommand({
     TableName: BOOKINGS_TABLE,
@@ -238,5 +255,50 @@ export async function updateBookingStatus(bookingId: string, paymentStatus: "pen
       ":status": paymentStatus,
     },
   });
+  await dynamoDb.send(command);
+}
+
+export async function getBookingsByPlan(planId: string): Promise<DynamoDBBooking[]> {
+  try {
+    const command = new ScanCommand({
+      TableName: BOOKINGS_TABLE,
+      FilterExpression: "planId = :planId",
+      ExpressionAttributeValues: {
+        ":planId": planId,
+      },
+    });
+    const response = await dynamoDb.send(command);
+    return (response.Items || []) as DynamoDBBooking[];
+  } catch (error) {
+    console.error("Error getting bookings by plan:", error);
+    return [];
+  }
+}
+
+export async function updateBooking(bookingId: string, updates: Partial<DynamoDBBooking>): Promise<void> {
+  const updateExpressions: string[] = [];
+  const expressionAttributeValues: any = {};
+  const expressionAttributeNames: any = {};
+
+  Object.entries(updates).forEach(([key, value], index) => {
+    if (key !== "bookingId") {
+      const attributeName = `#attr${index}`;
+      const attributeValue = `:val${index}`;
+      updateExpressions.push(`${attributeName} = ${attributeValue}`);
+      expressionAttributeNames[attributeName] = key;
+      expressionAttributeValues[attributeValue] = value;
+    }
+  });
+
+  if (updateExpressions.length === 0) return;
+
+  const command = new UpdateCommand({
+    TableName: BOOKINGS_TABLE,
+    Key: { bookingId },
+    UpdateExpression: `SET ${updateExpressions.join(", ")}`,
+    ExpressionAttributeNames: expressionAttributeNames,
+    ExpressionAttributeValues: expressionAttributeValues,
+  });
+
   await dynamoDb.send(command);
 }

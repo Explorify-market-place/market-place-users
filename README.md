@@ -27,7 +27,9 @@ This project is part of a dual-platform ecosystem:
 - 🌓 Dark mode support
 - 📱 Responsive design
 - 🗺️ Travel plan browsing and booking
-- 💳 Payment integration ready
+- 💳 RazorPay payment integration with refund rules
+- 💰 Automated vendor payouts with platform commission
+- 🔄 Refund management with configurable rules
 - 🔒 Secure session management
 
 ## 📦 Database Schema
@@ -68,6 +70,10 @@ This project is part of a dual-platform ecosystem:
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  // Payment & Refund Configuration
+  refundPercentage?: number;      // Percentage refundable (80 for 80%)
+  refundDaysBeforeTrip?: number;  // Days before trip start for refund eligibility
+  vendorCut?: number;             // Percentage cut for vendor (85 for 85%, rest goes to platform)
 }
 ```
 
@@ -83,6 +89,24 @@ This project is part of a dual-platform ecosystem:
   paymentStatus: "pending" | "completed" | "failed";
   totalAmount: number;
   createdAt: string;
+
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+
+  
+  // Trip and Refund Management
+  tripStartDate: string;           // When the trip actually starts
+  refundStatus?: "none" | "requested" | "processing" | "completed" | "rejected";
+  refundAmount?: number;
+  refundDate?: string;
+
+
+  // Vendor Payout Management
+  vendorPayoutStatus?: "pending" | "processing" | "completed" | "failed";
+  vendorPayoutAmount?: number;
+  vendorPayoutDate?: string;
+  platformCut?: number;           // Amount kept by platform
 }
 ```
 
@@ -132,6 +156,11 @@ This project is part of a dual-platform ecosystem:
    # OAuth Providers (if using)
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+   # RazorPay Configuration
+   RAZORPAY_KEY_ID=your_razorpay_key_id
+   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+   RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
    ```
 
 4. **Run the development server**
@@ -218,6 +247,46 @@ Dark mode is implemented using `next-themes`:
 - Toggle component: `components/mode-toggle.tsx`
 - Provider: `components/theme-provider.tsx`
 - Supports: light, dark, and system preference
+
+## 💳 Payment Flow (RazorPay Integration)
+
+### Money Flow
+
+1. **User Books and Pays**
+   - User creates a booking and pays via RazorPay
+   - Payment amount is held in the platform account until trip starts
+   - Booking status: `paymentStatus: "completed"`, `vendorPayoutStatus: "pending"`
+
+2. **Refund Before Trip Starts**
+   - If refund requested before trip start date
+   - Refund eligibility checked based on plan's `refundDaysBeforeTrip` and `refundPercentage`
+   - Refund processed according to rules (x% refundable before y days)
+   - Booking status: `refundStatus: "completed"`
+
+3. **Vendor Payout After Trip Starts**
+   - When trip starts, platform deducts commission (`platformCut`)
+   - Remaining amount (`vendorPayoutAmount`) transferred to vendor account
+   - Booking status: `vendorPayoutStatus: "completed"`
+
+### API Endpoints
+
+- `POST /api/payments/create-order` - Create RazorPay payment order
+- `POST /api/payments/verify` - Verify payment and create booking
+- `POST /api/payments/refund` - Process refund with rules validation
+- `POST /api/payments/vendor-payout` - Transfer funds to vendor (admin/vendor only)
+- `POST /api/payments/webhook` - RazorPay webhook handler for events
+
+### Refund Rules Configuration
+
+Each travel plan can have:
+- `refundPercentage`: Percentage of amount refundable (default: 100%)
+- `refundDaysBeforeTrip`: Minimum days before trip start for refund eligibility (default: 7 days)
+
+### Vendor Commission
+
+Each travel plan can specify:
+- `vendorCut`: Percentage of payment that goes to vendor (default: 85%)
+- Platform keeps: `100 - vendorCut` (default: 15%)
 
 ## 🔧 Development Guidelines
 

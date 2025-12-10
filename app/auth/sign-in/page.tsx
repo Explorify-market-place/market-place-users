@@ -162,7 +162,7 @@ export default function SignInPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-fade-in">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-primary">
-                  Welcome Back
+                  {authMode === "signin" ? "Welcome Back" : "Create Account"}
                 </span>
               </div>
 
