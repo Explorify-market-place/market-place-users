@@ -48,8 +48,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate total amount
-    const totalAmount = plan.price * numPeople;
+    // Calculate total amount (trip cost + 2% platform fee)
+    const tripCost = plan.price * numPeople;
+    const platformFee = Math.round(tripCost * 0.02); // 2% platform fee
+    const totalAmount = tripCost + platformFee;
 
     // Create Razorpay order
     const order = await createPaymentOrder(
@@ -61,6 +63,8 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         numPeople: numPeople.toString(),
         dateBooked,
+        tripCost: tripCost.toString(),
+        platformFee: platformFee.toString(),
       }
     );
 

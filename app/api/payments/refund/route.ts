@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { processRefund } from "@/lib/razorpay";
-import {
-  getBookingById,
-  getPlanById,
-  updateBookingStatus,
-} from "@/lib/db-helpers";
+import { getBookingById } from "@/lib/db-helpers";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamoDb, BOOKINGS_TABLE } from "@/lib/dynamodb";
 
@@ -13,10 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { bookingId } = await request.json();
@@ -31,10 +24,7 @@ export async function POST(request: NextRequest) {
     // Get booking details
     const booking = await getBookingById(bookingId);
     if (!booking) {
-      return NextResponse.json(
-        { error: "Booking not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
     // Verify user owns this booking or is admin
@@ -69,52 +59,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get plan details for refund rules
-    const plan = await getPlanById(booking.planId);
-    if (!plan) {
-      return NextResponse.json(
-        { error: "Travel plan not found" },
-        { status: 404 }
-      );
-    }
-
-    // Calculate days until trip start
+    // Calculate hours until trip start
     const tripStartDate = new Date(booking.dateBooked);
     const now = new Date();
-    const daysUntilTrip = Math.ceil(
-      (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const hoursUntilTrip =
+      (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    // Check refund eligibility based on rules
-    const refundDaysBeforeTrip = plan.refundDaysBeforeTrip || 7; // Default 7 days
-    const refundPercentage = plan.refundPercentage || 100; // Default 100% refund
-
-    /*
-    * Assuming that each plan has a default refund days and percentage, 
-    *
-    * If we need to dynamically change the refund percentage as a Function of daysUntilTrip,
-    * we can do that by adding a function to the plan object.
-
-    */
-
-    if (daysUntilTrip < 0) {
+    // Simple policy: Full refund if cancelled 24+ hours before trip
+    if (tripStartDate < now) {
       return NextResponse.json(
         { error: "Trip has already started. Refund not available." },
         { status: 400 }
       );
     }
 
-    if (daysUntilTrip < refundDaysBeforeTrip) {
+    if (hoursUntilTrip < 24 && booking.bookingStatus !== "cancelled") {
       return NextResponse.json(
         {
-          error: `Refund must be requested at least ${refundDaysBeforeTrip} days before trip start`,
+          error: "Refund must be requested at least 24 hours before trip start",
         },
         { status: 400 }
       );
     }
 
-    // Calculate refund amount
-    const refundAmount = (booking.totalAmount * refundPercentage) / 100;
+    // Full refund for all eligible cancellations
+    const refundAmount = booking.totalAmount;
 
     if (!booking.razorpayPaymentId) {
       return NextResponse.json(
@@ -197,4 +166,3 @@ async function updateBookingRefundStatus(
 
   await dynamoDb.send(command);
 }
-

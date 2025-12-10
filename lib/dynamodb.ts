@@ -51,10 +51,6 @@ export interface DynamoDBPlan {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
-  // Refund rules
-  refundPercentage?: number; // Percentage refundable ( 80 for 80%)
-  refundDaysBeforeTrip?: number; // Days before trip start for refund eligibility
-  // Vendor commission
   vendorCut?: number; // Percentage cut for vendor ( 85 for 85%, rest goes to platform)
 }
 
@@ -65,6 +61,7 @@ export interface DynamoDBBooking {
   dateBooked: string; // Trip Start Date
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
+  bookingStatus: "confirmed" | "cancelled" | "completed"; // Booking lifecycle
   totalAmount: number;
   createdAt: string;
   // RazorPay fields
@@ -75,6 +72,8 @@ export interface DynamoDBBooking {
   refundStatus?: "none" | "requested" | "processing" | "completed" | "rejected";
   refundAmount?: number;
   refundDate?: string;
+  refundRazorpayId?: string;
+  cancelledAt?: string;
   // Vendor payout management
   vendorPayoutStatus?: "pending" | "processing" | "completed" | "failed";
   vendorPayoutAmount?: number;

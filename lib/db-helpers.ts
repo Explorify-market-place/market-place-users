@@ -229,6 +229,23 @@ export async function getBookingById(bookingId: string): Promise<DynamoDBBooking
   }
 }
 
+export async function getBookingByPaymentId(razorpayPaymentId: string): Promise<DynamoDBBooking | null> {
+  try {
+    const command = new ScanCommand({
+      TableName: BOOKINGS_TABLE,
+      FilterExpression: "razorpayPaymentId = :paymentId",
+      ExpressionAttributeValues: {
+        ":paymentId": razorpayPaymentId,
+      },
+    });
+    const response = await dynamoDb.send(command);
+    return response.Items && response.Items.length > 0 ? response.Items[0] as DynamoDBBooking : null;
+  } catch (error) {
+    console.error("Error getting booking by payment ID:", error);
+    return null;
+  }
+}
+
 export async function updateBookingStatus(bookingId: string, paymentStatus: "pending" | "completed" | "failed"): Promise<void> {
   const command = new UpdateCommand({
     TableName: BOOKINGS_TABLE,

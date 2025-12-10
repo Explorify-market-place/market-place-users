@@ -5,7 +5,6 @@ declare module "next-auth" {
   interface User {
     id: string;
     role?: "user" | "vendor" | "admin";
-    vendorVerified?: boolean;
   }
 
   interface Session {
@@ -15,7 +14,6 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       role?: "user" | "vendor" | "admin";
-      vendorVerified?: boolean;
     };
   }
 }
@@ -24,7 +22,5 @@ declare module "next-auth/jwt" {
   interface JWT {
     userId?: string;
     role?: "user" | "vendor" | "admin";
-    vendorVerified?: boolean;
   }
 }
-

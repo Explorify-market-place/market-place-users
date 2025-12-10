@@ -87,7 +87,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           session.user.id = dbUser.userId;
           session.user.role = dbUser.role;
-          session.user.vendorVerified = dbUser.vendorVerified;
         }
       }
       return session;
@@ -99,7 +98,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           // enrich token for middleware
           token.role = dbUser.role;
-          token.vendorVerified = dbUser.vendorVerified;
           token.userId = dbUser.userId;
         }
       }

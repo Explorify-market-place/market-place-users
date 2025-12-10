@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { getBookingById, updateBookingStatus } from "@/lib/db-helpers";
-import { verifyPaymentSignature } from "@/lib/razorpay";
+import { getBookingByPaymentId, updateBooking } from "@/lib/db-helpers";
 /*
-* RazorPay webhook handler
-* This handles events from RazorPay like payment.captured, payment.failed
-*/
+ * RazorPay webhook handler
+ * This handles events from RazorPay like payment.captured, payment.failed
+ */
 export async function POST(request: NextRequest) {
   try {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || "";
@@ -21,10 +20,7 @@ export async function POST(request: NextRequest) {
     const signature = request.headers.get("x-razorpay-signature");
 
     if (!signature) {
-      return NextResponse.json(
-        { error: "Missing signature" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing signature" }, { status: 400 });
     }
 
     // Verify webhook signature
@@ -35,10 +31,7 @@ export async function POST(request: NextRequest) {
 
     if (expectedSignature !== signature) {
       console.error("Invalid webhook signature");
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
     const event = JSON.parse(body);
@@ -76,7 +69,7 @@ async function handlePaymentCaptured(payload: any) {
     // Find booking by order ID
     // Note: You might need to add a GSI or scan to find by razorpayOrderId
     // For now, we'll update based on payment ID if stored
-    
+
     console.log(`Payment captured: ${payment.id} for order: ${orderId}`);
     // You can add logic here to update booking status if needed
   } catch (error) {
@@ -97,10 +90,57 @@ async function handlePaymentFailed(payload: any) {
 async function handleRefundCreated(payload: any) {
   try {
     const refund = payload.refund.entity;
-    console.log(`Refund created: ${refund.id} for payment: ${refund.payment_id}`);
-    // You can add logic here to update booking refund status if needed
+    const paymentId = refund.payment_id;
+    const refundId = refund.id;
+    const status = refund.status; // "pending", "processed", or "failed"
+
+    console.log(`Refund ${status}: ${refundId} for payment: ${paymentId}`);
+
+    // Map Razorpay refund status to our booking refund status
+    let bookingRefundStatus:
+      | "none"
+      | "requested"
+      | "processing"
+      | "completed"
+      | "rejected";
+    if (status === "processed") {
+      bookingRefundStatus = "completed";
+    } else if (status === "failed") {
+      bookingRefundStatus = "rejected";
+    } else {
+      bookingRefundStatus = "processing";
+    }
+
+    // Find booking by razorpayPaymentId and update refund status
+    const booking = await getBookingByPaymentId(paymentId);
+    if (booking) {
+      const updateData: {
+        refundStatus:
+          | "none"
+          | "requested"
+          | "processing"
+          | "completed"
+          | "rejected";
+        refundRazorpayId: string;
+        refundDate?: string;
+      } = {
+        refundStatus: bookingRefundStatus,
+        refundRazorpayId: refundId,
+      };
+
+      // Only set refundDate when refund is actually completed
+      if (status === "processed") {
+        updateData.refundDate = new Date().toISOString();
+      }
+
+      await updateBooking(booking.bookingId, updateData);
+      console.log(
+        `Updated booking ${booking.bookingId} refund status to: ${bookingRefundStatus}`
+      );
+    } else {
+      console.warn(`No booking found for payment ID: ${paymentId}`);
+    }
   } catch (error) {
     console.error("Error handling refund created:", error);
   }
 }
-
