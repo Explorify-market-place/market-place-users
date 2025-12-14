@@ -106,8 +106,23 @@ export async function POST(request: NextRequest) {
         }
       );
 
-      // Update booking with refund details
-      await updateBookingRefundStatus(bookingId, "completed", refundAmount);
+      // Store refund ID immediately, status will be updated via webhook
+      const updateData: any = {
+        refundRazorpayId: refund.id,
+        refundAmount,
+      };
+
+      // If Razorpay immediately marks as processed (test mode), update status
+      if (refund.status === "processed") {
+        updateData.refundStatus = "completed";
+        updateData.refundDate = new Date().toISOString();
+      }
+
+      await updateBookingRefundStatus(
+        bookingId,
+        refund.status === "processed" ? "completed" : "processing",
+        refundAmount
+      );
 
       return NextResponse.json(
         {
