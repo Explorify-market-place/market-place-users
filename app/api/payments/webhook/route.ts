@@ -7,9 +7,9 @@ import { getBookingByPaymentId, updateBooking } from "@/lib/db-helpers";
  */
 export async function POST(request: NextRequest) {
   try {
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || "";
+    const webhookSecret = process.env.RAZORPAY_KEY_SECRET || "";
     if (!webhookSecret) {
-      console.error("RAZORPAY_WEBHOOK_SECRET not configured");
+      console.error("RAZORPAY_KEY_SECRET not configured");
       return NextResponse.json(
         { error: "Webhook secret not configured" },
         { status: 500 }
@@ -47,6 +47,12 @@ export async function POST(request: NextRequest) {
       case "refund.created":
         await handleRefundCreated(event.payload);
         break;
+      case "refund.processed":
+        await handleRefundProcessed(event.payload);
+        break;
+      case "refund.failed":
+        await handleRefundFailed(event.payload);
+        break;
       default:
         console.log(`Unhandled event type: ${event.event}`);
     }
@@ -64,14 +70,31 @@ export async function POST(request: NextRequest) {
 async function handlePaymentCaptured(payload: any) {
   try {
     const payment = payload.payment.entity;
+    const paymentId = payment.id;
     const orderId = payment.order_id;
+    const amount = payment.amount / 100; // Convert paise to rupees
 
-    // Find booking by order ID
-    // Note: You might need to add a GSI or scan to find by razorpayOrderId
-    // For now, we'll update based on payment ID if stored
+    console.log(
+      `Payment captured: ${paymentId} for order: ${orderId}, amount: ₹${amount}`
+    );
 
-    console.log(`Payment captured: ${payment.id} for order: ${orderId}`);
-    // You can add logic here to update booking status if needed
+    // Find booking by payment ID and verify it's marked as completed
+    const booking = await getBookingByPaymentId(paymentId);
+    if (booking) {
+      // Booking should already be completed from the verify endpoint
+      // This is a backup confirmation
+      if (booking.paymentStatus !== "completed") {
+        console.warn(
+          `Booking ${booking.bookingId} payment status is ${booking.paymentStatus}, updating to completed`
+        );
+        await updateBooking(booking.bookingId, {
+          paymentStatus: "completed",
+        });
+      }
+      console.log(`Payment confirmed for booking ${booking.bookingId}`);
+    } else {
+      console.warn(`No booking found for payment ID: ${paymentId}`);
+    }
   } catch (error) {
     console.error("Error handling payment captured:", error);
   }
@@ -80,8 +103,25 @@ async function handlePaymentCaptured(payload: any) {
 async function handlePaymentFailed(payload: any) {
   try {
     const payment = payload.payment.entity;
-    console.log(`Payment failed: ${payment.id}`);
-    // You can add logic here to update booking status if needed
+    const paymentId = payment.id;
+    const orderId = payment.order_id;
+    const errorCode = payment.error_code;
+    const errorDescription = payment.error_description;
+
+    console.log(
+      `Payment failed: ${paymentId} for order: ${orderId}, error: ${errorCode} - ${errorDescription}`
+    );
+
+    // Find booking by payment ID and mark as failed
+    const booking = await getBookingByPaymentId(paymentId);
+    if (booking) {
+      await updateBooking(booking.bookingId, {
+        paymentStatus: "failed",
+      });
+      console.log(`Marked booking ${booking.bookingId} as failed`);
+    } else {
+      console.warn(`No booking found for failed payment ID: ${paymentId}`);
+    }
   } catch (error) {
     console.error("Error handling payment failed:", error);
   }
@@ -92,55 +132,88 @@ async function handleRefundCreated(payload: any) {
     const refund = payload.refund.entity;
     const paymentId = refund.payment_id;
     const refundId = refund.id;
-    const status = refund.status; // "pending", "processed", or "failed"
+    const amount = refund.amount / 100; // Convert paise to rupees
+    const status = refund.status; // "pending" initially
 
-    console.log(`Refund ${status}: ${refundId} for payment: ${paymentId}`);
+    console.log(
+      `Refund created: ${refundId} for payment: ${paymentId}, amount: ₹${amount}, status: ${status}`
+    );
 
-    // Map Razorpay refund status to our booking refund status
-    let bookingRefundStatus:
-      | "none"
-      | "requested"
-      | "processing"
-      | "completed"
-      | "rejected";
-    if (status === "processed") {
-      bookingRefundStatus = "completed";
-    } else if (status === "failed") {
-      bookingRefundStatus = "rejected";
-    } else {
-      bookingRefundStatus = "processing";
-    }
-
-    // Find booking by razorpayPaymentId and update refund status
+    // Find booking and update to processing status
     const booking = await getBookingByPaymentId(paymentId);
     if (booking) {
-      const updateData: {
-        refundStatus:
-          | "none"
-          | "requested"
-          | "processing"
-          | "completed"
-          | "rejected";
-        refundRazorpayId: string;
-        refundDate?: string;
-      } = {
-        refundStatus: bookingRefundStatus,
+      await updateBooking(booking.bookingId, {
+        refundStatus: "processing",
         refundRazorpayId: refundId,
-      };
-
-      // Only set refundDate when refund is actually completed
-      if (status === "processed") {
-        updateData.refundDate = new Date().toISOString();
-      }
-
-      await updateBooking(booking.bookingId, updateData);
+        refundAmount: amount,
+      });
       console.log(
-        `Updated booking ${booking.bookingId} refund status to: ${bookingRefundStatus}`
+        `Refund initiated for booking ${booking.bookingId}, status: processing`
       );
     } else {
       console.warn(`No booking found for payment ID: ${paymentId}`);
     }
   } catch (error) {
     console.error("Error handling refund created:", error);
+  }
+}
+
+async function handleRefundProcessed(payload: any) {
+  try {
+    const refund = payload.refund.entity;
+    const paymentId = refund.payment_id;
+    const refundId = refund.id;
+    const amount = refund.amount / 100;
+
+    console.log(
+      `Refund processed: ${refundId} for payment: ${paymentId}, amount: ₹${amount}`
+    );
+
+    // Find booking and update to completed status
+    const booking = await getBookingByPaymentId(paymentId);
+    if (booking) {
+      await updateBooking(booking.bookingId, {
+        refundStatus: "completed",
+        refundRazorpayId: refundId,
+        refundAmount: amount,
+        refundDate: new Date().toISOString(),
+      });
+      console.log(
+        `Refund completed for booking ${booking.bookingId}, ₹${amount} refunded to user`
+      );
+    } else {
+      console.warn(`No booking found for payment ID: ${paymentId}`);
+    }
+  } catch (error) {
+    console.error("Error handling refund processed:", error);
+  }
+}
+
+async function handleRefundFailed(payload: any) {
+  try {
+    const refund = payload.refund.entity;
+    const paymentId = refund.payment_id;
+    const refundId = refund.id;
+    const amount = refund.amount / 100;
+
+    console.log(
+      `Refund failed: ${refundId} for payment: ${paymentId}, amount: ₹${amount}`
+    );
+
+    // Find booking and update to rejected status
+    const booking = await getBookingByPaymentId(paymentId);
+    if (booking) {
+      await updateBooking(booking.bookingId, {
+        refundStatus: "rejected",
+        refundRazorpayId: refundId,
+      });
+      console.log(
+        `Refund failed for booking ${booking.bookingId}, manual intervention required`
+      );
+    } else {
+      console.warn(`No booking found for payment ID: ${paymentId}`);
+    }
+  } catch (error) {
+    console.error("Error handling refund failed:", error);
   }
 }
