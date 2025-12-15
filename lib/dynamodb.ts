@@ -36,8 +36,16 @@ export interface DynamoDBUser {
     organizationName?: string;
     address?: string;
     phoneNumber?: string;
+    bankDetails?: {
+      accountHolderName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      upiId?: string;
+    };
   };
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface DynamoDBPlan {
@@ -51,32 +59,15 @@ export interface DynamoDBPlan {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
-  vendorCut?: number; // Percentage cut for vendor ( 85 for 85%, rest goes to platform)
 }
 
 export interface DynamoDBBooking {
   bookingId: string;
   planId: string;
   userId: string;
-  dateBooked: string; // Trip Start Date
+  dateBooked: string;
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
-  bookingStatus: "confirmed" | "cancelled" | "completed"; // Booking lifecycle
   totalAmount: number;
   createdAt: string;
-  // RazorPay fields
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
-  razorpaySignature?: string;
-  // Trip and refund management
-  refundStatus?: "none" | "requested" | "processing" | "completed" | "rejected";
-  refundAmount?: number;
-  refundDate?: string;
-  refundRazorpayId?: string;
-  cancelledAt?: string;
-  // Vendor payout management
-  vendorPayoutStatus?: "pending" | "processing" | "completed" | "failed";
-  vendorPayoutAmount?: number;
-  vendorPayoutDate?: string;
-  platformCut?: number; // Amount kept by platform
 }

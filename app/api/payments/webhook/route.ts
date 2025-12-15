@@ -3,11 +3,11 @@ import crypto from "crypto";
 import { getBookingByPaymentId, updateBooking } from "@/lib/db-helpers";
 /*
  * RazorPay webhook handler
- * This handles events from RazorPay like payment.captured, payment.failed
+ * This handles events from RazorPay like payment.captured, payment.failed, refund.created, refund.processed, refund.failed
  */
 export async function POST(request: NextRequest) {
   try {
-    const webhookSecret = process.env.RAZORPAY_KEY_SECRET || "";
+    const webhookSecret = process.env.RAZORPAY_KEY_SECRET;
     if (!webhookSecret) {
       console.error("RAZORPAY_KEY_SECRET not configured");
       return NextResponse.json(
