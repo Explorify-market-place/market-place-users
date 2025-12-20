@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { planId, numPeople, dateBooked } = await request.json();
+    const { planId, numPeople, tripDate } = await request.json();
 
     // Validate required fields
-    if (!planId || !numPeople || !dateBooked) {
+    if (!planId || !numPeople || !tripDate) {
       return NextResponse.json(
-        { error: "planId, numPeople, and dateBooked are required" },
+        { error: "planId, numPeople, and tripDate are required" },
         { status: 400 }
       );
     }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         planId,
         userId: session.user.id,
         numPeople: numPeople.toString(),
-        dateBooked,
+        tripDate,
         tripCost: tripCost.toString(),
         platformFee: platformFee.toString(),
       }

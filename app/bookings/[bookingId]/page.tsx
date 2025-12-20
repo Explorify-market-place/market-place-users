@@ -104,7 +104,7 @@ export default async function BookingSuccessPage({
                         Travel Date
                       </div>
                       <div className="font-semibold">
-                        {new Date(booking.dateBooked).toLocaleDateString(
+                        {new Date(booking.tripDate).toLocaleDateString(
                           "en-IN",
                           {
                             day: "numeric",
@@ -174,7 +174,7 @@ export default async function BookingSuccessPage({
             {/* Cancel Button (shows only if eligible) */}
             <CancelBookingButton
               bookingId={booking.bookingId}
-              tripDate={booking.dateBooked}
+              tripDate={booking.tripDate}
               bookingStatus={booking.bookingStatus}
             />
 

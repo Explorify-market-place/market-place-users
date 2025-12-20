@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       bookingId: randomUUID(),
       planId,
       userId: session.user.id,
-      dateBooked: travelDate,
+      tripDate: travelDate,
       numPeople: numAdults,
       paymentStatus: "completed",
       bookingStatus: "confirmed",

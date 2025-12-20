@@ -12,24 +12,16 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { DynamoDBPlan } from "@/lib/dynamodb";
 
 interface BookingPageProps {
   params: Promise<{ planId: string }>;
 }
 
-interface Plan {
-  planId: string;
-  name: string;
-  price: number;
-  image: string;
-  route: string[];
-  description: string;
-}
-
 export default function BookingPage({ params }: BookingPageProps) {
   const router = useRouter();
   const [planId, setPlanId] = useState<string>("");
-  const [plan, setPlan] = useState<Plan | null>(null);
+  const [plan, setPlan] = useState<DynamoDBPlan | null>(null);
   const [numAdults, setNumAdults] = useState(1);
   const [travelDate, setTravelDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +64,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         resolve(true);
         return;
       }
-      
+
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
@@ -105,7 +97,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         body: JSON.stringify({
           planId,
           numPeople: numAdults,
-          dateBooked: travelDate,
+          tripDate: travelDate,
         }),
       });
 
@@ -115,7 +107,7 @@ export default function BookingPage({ params }: BookingPageProps) {
       }
 
       const orderData = await orderResponse.json();
-      
+
       // Store order ID for later use
       const createdOrderId = orderData.orderId;
 
@@ -130,7 +122,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         handler: async function (response: any) {
           try {
             console.log("Razorpay response:", response);
-            
+
             const verifyPayload = {
               orderId: createdOrderId, // Use the order ID we created
               paymentId: response.razorpay_payment_id,
@@ -140,9 +132,9 @@ export default function BookingPage({ params }: BookingPageProps) {
               travelDate,
               totalAmount,
             };
-            
+
             console.log("Sending verification payload:", verifyPayload);
-            
+
             // Verify payment
             const verifyResponse = await fetch("/api/payments/verify", {
               method: "POST",

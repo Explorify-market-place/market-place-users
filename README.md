@@ -84,7 +84,7 @@ This project is part of a dual-platform ecosystem:
   bookingId: string; // Partition Key
   planId: string;
   userId: string;
-  dateBooked: string;
+  tripDate: string;
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
   totalAmount: number;

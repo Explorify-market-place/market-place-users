@@ -101,7 +101,7 @@ export default async function BookingsPage() {
                             <span>
                               Travel Date:{" "}
                               {new Date(
-                                booking.dateBooked
+                                booking.tripDate
                               ).toLocaleDateString()}
                             </span>
                           </div>

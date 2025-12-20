@@ -41,7 +41,7 @@ export async function POST(
     }
 
     // Check if trip has already happened
-    const tripDate = new Date(booking.dateBooked);
+    const tripDate = new Date(booking.tripDate);
     const now = new Date();
 
     if (tripDate < now) {

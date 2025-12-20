@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate hours until trip start
-    const tripStartDate = new Date(booking.dateBooked);
+    const tripStartDate = new Date(booking.tripDate);
     const now = new Date();
     const hoursUntilTrip =
       (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60);
