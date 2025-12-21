@@ -22,6 +22,7 @@ export const dynamoDb = DynamoDBDocumentClient.from(client, {
 export const PLANS_TABLE = process.env.DYNAMODB_PLANS_TABLE || "TravelPlans";
 export const USERS_TABLE = process.env.DYNAMODB_USERS_TABLE || "Users";
 export const BOOKINGS_TABLE = process.env.DYNAMODB_BOOKINGS_TABLE || "Bookings";
+export const DEPARTURES_TABLE = process.env.DYNAMODB_DEPARTURES_TABLE || "Departures";
 
 // Type definitions for DynamoDB items
 export interface DynamoDBUser {
@@ -62,11 +63,25 @@ export interface DynamoDBPlan {
   isActive: boolean;
 }
 
+export interface DynamoDBDeparture {
+  departureId: string; // Partition Key
+  planId: string; // Links to TravelPlans template
+  departureDate: string; // ISO string of trip start date/time
+  pickupLocation: string; // Meeting point address
+  pickupTime: string; // Time string (e.g., "06:00 AM")
+  totalCapacity: number; // Max people for this departure
+  bookedSeats: number; // Current bookings count (availableSeats = totalCapacity - bookedSeats)
+  status: "scheduled" | "confirmed" | "cancelled" | "completed";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DynamoDBBooking {
   bookingId: string;
-  planId: string;
+  planId: string; // Keep for queries and backward compatibility
+  departureId: string; // Links to specific scheduled departure
   userId: string;
-  tripDate: string; // When the trip starts
+  tripDate: string; // Keep for refund logic and future payout lambda
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
   bookingStatus?: "confirmed" | "cancelled" | "completed"; // Trip status

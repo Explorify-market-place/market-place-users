@@ -51,62 +51,90 @@ This project is part of a dual-platform ecosystem:
     organizationName?: string;
     address?: string;
     phoneNumber?: string;
+    bankDetails?: {          // For vendor payouts
+      accountHolderName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      upiId?: string;
+    };
   };
   createdAt: string;
+  updatedAt: string;
 }
 ```
 
 #### 2. **TravelPlans Table** (`DYNAMODB_PLANS_TABLE`)
 
+**Purpose**: Package templates created by vendors (not specific scheduled trips)
+
 ```typescript
 {
   planId: string;          // Partition Key
-  vendorId: string;
-  name: string;
-  image: string;
-  route: string[];
-  description: string;
-  price: number;
+  vendorId: string;        // References Users table
+  name: string;            // Trip package name
+  image: string;           // Main image URL
+  route: string[];         // Array of destinations/locations
+  description: string;     // Full package description
+  price: number;           // Base price per person (INR)
+  vendorCut?: number;      // Vendor percentage (default 85%)
   createdAt: string;
   updatedAt: string;
-  isActive: boolean;
-  // Payment & Refund Configuration
-  refundPercentage?: number;      // Percentage refundable (80 for 80%)
-  refundDaysBeforeTrip?: number;  // Days before trip start for refund eligibility
-  vendorCut?: number;             // Percentage cut for vendor (85 for 85%, rest goes to platform)
+  isActive: boolean;       // Vendor can enable/disable package
 }
 ```
 
-#### 3. **Bookings Table** (`DYNAMODB_BOOKINGS_TABLE`)
+#### 3. **Departures Table** (`DYNAMODB_DEPARTURES_TABLE`)
+
+**Purpose**: Scheduled instances of travel plans with capacity management
 
 ```typescript
 {
-  bookingId: string; // Partition Key
-  planId: string;
-  userId: string;
-  tripDate: string;
+  departureId: string; // Partition Key
+  planId: string; // References TravelPlans table
+  departureDate: string; // ISO string - trip start date/time
+  pickupLocation: string; // Meeting point address
+  pickupTime: string; // Time (e.g., "06:00 AM")
+  totalCapacity: number; // Max people for this departure
+  bookedSeats: number; // Currently booked count
+  // Available = totalCapacity - bookedSeats
+  status: "scheduled" | "confirmed" | "cancelled" | "completed";
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+#### 4. **Bookings Table** (`DYNAMODB_BOOKINGS_TABLE`)
+
+```typescript
+{
+  bookingId: string;       // Partition Key
+  planId: string;          // References TravelPlans (for queries)
+  departureId: string;     // References Departures (specific trip)
+  userId: string;          // References Users table
+  tripDate: string;        // Duplicate from departure (for refunds/payouts)
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
-  totalAmount: number;
+  bookingStatus?: "confirmed" | "cancelled" | "completed";
+  totalAmount: number;     // Total paid (trip cost + 2% platform fee)
   createdAt: string;
 
+  // Razorpay Integration
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
 
-  
-  // Trip and Refund Management
-  tripStartDate: string;           // When the trip actually starts
-  refundStatus?: "none" | "requested" | "processing" | "completed" | "rejected";
+  // Refund Management
+  refundStatus: "none" | "requested" | "processing" | "completed" | "rejected";
   refundAmount?: number;
   refundDate?: string;
+  razorpayRefundId?: string;
 
-
-  // Vendor Payout Management
-  vendorPayoutStatus?: "pending" | "processing" | "completed" | "failed";
-  vendorPayoutAmount?: number;
+  // Vendor Payout (Future implementation)
+  vendorPayoutStatus: "pending" | "processing" | "completed" | "failed";
+  vendorPayoutAmount?: number;  // 85% of trip cost
   vendorPayoutDate?: string;
-  platformCut?: number;           // Amount kept by platform
+  platformCut?: number;         // 15% of trip cost
 }
 ```
 
@@ -147,6 +175,7 @@ This project is part of a dual-platform ecosystem:
    # DynamoDB Tables
    DYNAMODB_USERS_TABLE=Users
    DYNAMODB_PLANS_TABLE=TravelPlans
+   DYNAMODB_DEPARTURES_TABLE=Departures
    DYNAMODB_BOOKINGS_TABLE=Bookings
 
    # NextAuth Configuration
@@ -253,11 +282,13 @@ Dark mode is implemented using `next-themes`:
 ### Money Flow
 
 1. **User Books and Pays**
+
    - User creates a booking and pays via RazorPay
    - Payment amount is held in the platform account until trip starts
    - Booking status: `paymentStatus: "completed"`, `vendorPayoutStatus: "pending"`
 
 2. **Refund Before Trip Starts**
+
    - If refund requested before trip start date
    - Refund eligibility checked based on plan's `refundDaysBeforeTrip` and `refundPercentage`
    - Refund processed according to rules (x% refundable before y days)
@@ -279,12 +310,14 @@ Dark mode is implemented using `next-themes`:
 ### Refund Rules Configuration
 
 Each travel plan can have:
+
 - `refundPercentage`: Percentage of amount refundable (default: 100%)
 - `refundDaysBeforeTrip`: Minimum days before trip start for refund eligibility (default: 7 days)
 
 ### Vendor Commission
 
 Each travel plan can specify:
+
 - `vendorCut`: Percentage of payment that goes to vendor (default: 85%)
 - Platform keeps: `100 - vendorCut` (default: 15%)
 
