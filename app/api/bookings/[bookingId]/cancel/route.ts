@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getBookingById, updateBooking } from "@/lib/db-helpers";
+import {
+  getBookingById,
+  updateBooking,
+  decrementBookedSeats,
+} from "@/lib/db-helpers";
 
 export async function POST(
   request: NextRequest,
@@ -63,6 +67,15 @@ export async function POST(
         },
         { status: 400 }
       );
+    }
+
+    // Restore departure capacity
+    try {
+      await decrementBookedSeats(booking.departureId, booking.numPeople);
+    } catch (seatError) {
+      console.error("Failed to decrement booked seats:", seatError);
+      // Continue with cancellation even if seat decrement fails
+      // Better to err on side of customer getting refund
     }
 
     // Mark booking as cancelled and set refund as requested

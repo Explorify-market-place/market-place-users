@@ -446,14 +446,30 @@ export async function incrementBookedSeats(
   numPeople: number
 ): Promise<boolean> {
   try {
+    // First, get the current departure to check capacity
+    const getDeparture = await getDepartureById(departureId);
+    if (!getDeparture) {
+      console.error("Departure not found");
+      return false;
+    }
+
+    const newBookedSeats = getDeparture.bookedSeats + numPeople;
+    if (newBookedSeats > getDeparture.totalCapacity) {
+      console.log("Capacity exceeded - cannot book");
+      return false;
+    }
+
+    // Now update atomically with condition to prevent race conditions
     const command = new UpdateCommand({
       TableName: DEPARTURES_TABLE,
       Key: { departureId },
       UpdateExpression:
-        "SET bookedSeats = bookedSeats + :numPeople, updatedAt = :updatedAt",
-      ConditionExpression: "bookedSeats + :numPeople <= totalCapacity",
+        "SET bookedSeats = :newBookedSeats, updatedAt = :updatedAt",
+      ConditionExpression:
+        "bookedSeats = :currentBookedSeats AND :newBookedSeats <= totalCapacity",
       ExpressionAttributeValues: {
-        ":numPeople": numPeople,
+        ":newBookedSeats": newBookedSeats,
+        ":currentBookedSeats": getDeparture.bookedSeats,
         ":updatedAt": new Date().toISOString(),
       },
     });
@@ -461,7 +477,9 @@ export async function incrementBookedSeats(
     return true;
   } catch (error: any) {
     if (error.name === "ConditionalCheckFailedException") {
-      console.log("Capacity exceeded - cannot book");
+      console.log(
+        "Capacity exceeded or concurrent update detected - cannot book"
+      );
       return false;
     }
     console.error("Error incrementing booked seats:", error);
@@ -473,16 +491,23 @@ export async function decrementBookedSeats(
   departureId: string,
   numPeople: number
 ): Promise<void> {
-  const command = new UpdateCommand({
-    TableName: DEPARTURES_TABLE,
-    Key: { departureId },
-    UpdateExpression:
-      "SET bookedSeats = bookedSeats - :numPeople, updatedAt = :updatedAt",
-    ConditionExpression: "bookedSeats >= :numPeople",
-    ExpressionAttributeValues: {
-      ":numPeople": numPeople,
-      ":updatedAt": new Date().toISOString(),
-    },
-  });
-  await dynamoDb.send(command);
+  try {
+    const command = new UpdateCommand({
+      TableName: DEPARTURES_TABLE,
+      Key: { departureId },
+      UpdateExpression:
+        "SET bookedSeats = if_not_exists(bookedSeats, :zero) - :numPeople, updatedAt = :updatedAt",
+      ConditionExpression:
+        "attribute_exists(departureId) AND bookedSeats >= :numPeople",
+      ExpressionAttributeValues: {
+        ":numPeople": numPeople,
+        ":zero": 0,
+        ":updatedAt": new Date().toISOString(),
+      },
+    });
+    await dynamoDb.send(command);
+  } catch (error) {
+    console.error("Error decrementing booked seats:", error);
+    throw error;
+  }
 }

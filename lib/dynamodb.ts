@@ -98,6 +98,7 @@ export interface DynamoDBBooking {
   refundAmount?: number;
   refundDate?: string;
   razorpayRefundId?: string;
+  cancelledAt?: string;
 
   // Vendor payout tracking
   vendorPayoutStatus: "pending" | "processing" | "completed" | "failed";

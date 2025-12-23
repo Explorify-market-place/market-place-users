@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getBookingById, getPlanById } from "@/lib/db-helpers";
+import { getBookingById, getPlanById, getDepartureById } from "@/lib/db-helpers";
 import { redirect, notFound } from "next/navigation";
 import {
   CheckCircle,
@@ -8,6 +8,7 @@ import {
   Users,
   CreditCard,
   ArrowLeft,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -35,6 +36,9 @@ export default async function BookingSuccessPage({
   }
 
   const plan = await getPlanById(booking.planId);
+  const departure = booking.departureId 
+    ? await getDepartureById(booking.departureId)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
@@ -94,7 +98,43 @@ export default async function BookingSuccessPage({
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                {/* Departure Details Section */}
+                {departure && (
+                  <div className="pt-4 border-t border-border/30">
+                    <h3 className="font-semibold mb-3">Departure Information</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground">
+                            Pickup Time
+                          </div>
+                          <div className="font-semibold">
+                            {departure.pickupTime}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <MapPin className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground">
+                            Pickup Location
+                          </div>
+                          <div className="font-semibold">
+                            {departure.pickupLocation}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-border/30">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Calendar className="w-5 h-5 text-primary" />
