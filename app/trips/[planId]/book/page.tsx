@@ -29,10 +29,12 @@ export default function BookingPage({ params }: BookingPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const departureId = searchParams.get("departureId");
-  
+
   const [planId, setPlanId] = useState<string>("");
   const [plan, setPlan] = useState<DynamoDBPlan | null>(null);
-  const [departure, setDeparture] = useState<DepartureWithAvailability | null>(null);
+  const [departure, setDeparture] = useState<DepartureWithAvailability | null>(
+    null
+  );
   const [numAdults, setNumAdults] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -64,7 +66,7 @@ export default function BookingPage({ params }: BookingPageProps) {
           const selectedDeparture = deptData.departures.find(
             (d: DepartureWithAvailability) => d.departureId === departureId
           );
-          
+
           if (selectedDeparture) {
             setDeparture(selectedDeparture);
           } else {
@@ -72,7 +74,9 @@ export default function BookingPage({ params }: BookingPageProps) {
           }
         }
       } else {
-        setError("No departure selected. Please select a departure from the trip details page.");
+        setError(
+          "No departure selected. Please select a departure from the trip details page."
+        );
       }
     } catch (err) {
       setError("Failed to load trip details");
@@ -308,35 +312,50 @@ export default function BookingPage({ params }: BookingPageProps) {
                     <div className="flex items-start gap-3">
                       <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">Departure Date</div>
+                        <div className="text-sm text-muted-foreground">
+                          Departure Date
+                        </div>
                         <div className="font-semibold">
-                          {new Date(departure.departureDate).toLocaleDateString("en-US", {
-                            weekday: "long",
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {new Date(departure.departureDate).toLocaleDateString(
+                            "en-US",
+                            {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            }
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">Pickup Time</div>
-                        <div className="font-semibold">{departure.pickupTime}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Pickup Time
+                        </div>
+                        <div className="font-semibold">
+                          {departure.pickupTime}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">Pickup Location</div>
-                        <div className="font-semibold">{departure.pickupLocation}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Pickup Location
+                        </div>
+                        <div className="font-semibold">
+                          {departure.pickupLocation}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <Users className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
-                        <div className="text-sm text-muted-foreground">Available Seats</div>
+                        <div className="text-sm text-muted-foreground">
+                          Available Seats
+                        </div>
                         <div className="font-semibold">
                           {departure.availableSeats} / {departure.totalCapacity}
                         </div>
@@ -351,7 +370,8 @@ export default function BookingPage({ params }: BookingPageProps) {
                           Limited Availability
                         </div>
                         <div className="text-yellow-600/80 dark:text-yellow-400/80">
-                          Only {departure.availableSeats} seats remaining. Book soon!
+                          Only {departure.availableSeats} seats remaining. Book
+                          soon!
                         </div>
                       </div>
                     </div>
@@ -381,14 +401,16 @@ export default function BookingPage({ params }: BookingPageProps) {
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => setNumAdults(Math.min(maxAdults, numAdults + 1))}
+                    onClick={() =>
+                      setNumAdults(Math.min(maxAdults, numAdults + 1))
+                    }
                     disabled={numAdults >= maxAdults}
                     className="rounded-full w-12 h-12"
                   >
                     +
                   </Button>
                   <span className="text-muted-foreground ml-2">
-                    (Max {maxAdults} {maxAdults === 1 ? 'person' : 'people'})
+                    (Max {maxAdults} {maxAdults === 1 ? "person" : "people"})
                   </span>
                 </div>
               </div>
@@ -448,10 +470,23 @@ export default function BookingPage({ params }: BookingPageProps) {
                   )}
                 </Button>
 
-                <div className="mt-6 pt-6 border-t border-border/30">
+                <div className="mt-6 pt-6 border-t border-border/30 space-y-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Shield className="w-4 h-4" />
                     <span>Secure payment powered by Razorpay</span>
+                  </div>
+
+                  {/* Cancellation Policy */}
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm font-semibold text-foreground mb-2">
+                      Cancellation Policy:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• 15+ days before trip: 100% refund of trip cost</li>
+                      <li>• 8-14 days before trip: 50% refund of trip cost</li>
+                      <li>• 1-7 days before trip: No refund</li>
+                      <li>• Platform fee (2%) is non-refundable</li>
+                    </ul>
                   </div>
                 </div>
               </div>

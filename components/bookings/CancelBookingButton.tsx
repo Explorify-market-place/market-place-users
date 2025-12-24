@@ -20,25 +20,42 @@ export function CancelBookingButton({
   bookingId,
   tripDate,
   bookingStatus,
+  tripCost,
 }: {
   bookingId: string;
   tripDate: string;
   bookingStatus: string;
+  tripCost: number;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // Check if cancellation is allowed
+  // Calculate days until trip for refund policy
   const tripDateTime = new Date(tripDate).getTime();
   const now = Date.now();
-  const hoursUntilTrip = (tripDateTime - now) / (1000 * 60 * 60);
+  const daysUntilTrip = Math.ceil((tripDateTime - now) / (1000 * 60 * 60 * 24));
+
+  // Determine refund eligibility
+  let refundPercentage = 0;
+  let refundMessage = "";
+  
+  if (daysUntilTrip >= 15) {
+    refundPercentage = 100;
+    refundMessage = `Full refund of ₹${tripCost.toLocaleString()} (100% of trip cost)`;
+  } else if (daysUntilTrip >= 8) {
+    refundPercentage = 50;
+    const refundAmount = Math.round(tripCost * 0.5);
+    refundMessage = `Partial refund of ₹${refundAmount.toLocaleString()} (50% of trip cost)`;
+  } else if (daysUntilTrip >= 1) {
+    refundPercentage = 0;
+    refundMessage = `No refund available (less than 8 days before trip)`;
+  }
 
   // Default to "confirmed" if bookingStatus is undefined (for old bookings)
   const status = bookingStatus || "confirmed";
-  const canCancel =
-    status === "confirmed" && hoursUntilTrip >= 24 && tripDateTime > now;
+  const canCancel = status === "confirmed" && tripDateTime > now;
 
   const handleCancel = async () => {
     setIsLoading(true);
@@ -84,14 +101,25 @@ export function CancelBookingButton({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogDescription className="space-y-3">
               <p>
                 Are you sure you want to cancel this booking? This action cannot
                 be undone.
               </p>
-              <p className="font-semibold text-foreground">
-                You will receive a full refund within 5-7 business days.
-              </p>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-semibold text-foreground mb-1">
+                  Refund Policy:
+                </p>
+                <p className="text-sm text-foreground">
+                  {refundMessage}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  * Platform fee is non-refundable
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  * Refund will be processed within 5-7 business days
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -120,7 +148,7 @@ export function CancelBookingButton({
         </AlertDialogContent>
       </AlertDialog>
       <p className="text-xs text-muted-foreground mt-2 text-center">
-        Free cancellation up to 24 hours before trip
+        Cancellation Policy: 100% refund (15+ days), 50% refund (8-14 days), No refund (1-7 days)
       </p>
     </div>
   );

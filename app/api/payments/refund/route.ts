@@ -59,13 +59,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate hours until trip start
+    // Calculate days until trip start
     const tripStartDate = new Date(booking.tripDate);
     const now = new Date();
-    const hoursUntilTrip =
-      (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const daysUntilTrip = Math.ceil(
+      (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-    // Simple policy: Full refund if cancelled 24+ hours before trip
+    // Check if trip has already passed
     if (tripStartDate < now) {
       return NextResponse.json(
         { error: "Trip has already started. Refund not available." },
@@ -73,17 +74,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (hoursUntilTrip < 24 && booking.bookingStatus !== "cancelled") {
+    // Tiered refund policy based on days until trip
+    let refundPercentage = 0;
+    if (daysUntilTrip >= 15) {
+      refundPercentage = 100; // Full refund
+    } else if (daysUntilTrip >= 8 && daysUntilTrip <= 14) {
+      refundPercentage = 50; // 50% refund
+    } else if (daysUntilTrip >= 1 && daysUntilTrip <= 7) {
+      refundPercentage = 0; // No refund
+    }
+
+    if (refundPercentage === 0 && booking.bookingStatus !== "cancelled") {
       return NextResponse.json(
         {
-          error: "Refund must be requested at least 24 hours before trip start",
+          error: `Refund not available. Cancellations must be made at least 8 days before the trip for a 50% refund, or 15+ days for a full refund.`,
         },
         { status: 400 }
       );
     }
 
-    // Full refund for all eligible cancellations
-    const refundAmount = booking.totalAmount;
+    // Calculate refund amount (percentage of tripCost only, platform fee is non-refundable)
+    const tripCostRefund = Math.round(
+      (booking.tripCost * refundPercentage) / 100
+    );
+    const refundAmount = tripCostRefund; // Platform fee is never refunded
+
+    // Calculate updated vendor payout amount
+    const remainingTripCost = booking.tripCost - tripCostRefund;
+    const updatedVendorPayoutAmount = Math.round(
+      remainingTripCost *
+        ((100 -
+          (booking.platformCut
+            ? (booking.platformCut / booking.tripCost) * 100
+            : 15)) /
+          100)
+    );
 
     if (!booking.razorpayPaymentId) {
       return NextResponse.json(
@@ -92,8 +117,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update booking status to processing
-    await updateBookingRefundStatus(bookingId, "processing", refundAmount);
+    // Update booking status to processing with refund details
+    await updateBookingRefundStatus(
+      bookingId,
+      "processing",
+      refundAmount,
+      refundPercentage,
+      updatedVendorPayoutAmount
+    );
 
     try {
       // Process refund with Razorpay
@@ -102,26 +133,17 @@ export async function POST(request: NextRequest) {
         refundAmount,
         {
           bookingId,
-          reason: "Customer requested refund",
+          reason: `${refundPercentage}% refund - Cancellation policy`,
         }
       );
 
-      // Store refund ID immediately, status will be updated via webhook
-      const updateData: any = {
-        refundRazorpayId: refund.id,
-        refundAmount,
-      };
-
-      // If Razorpay immediately marks as processed (test mode), update status
-      if (refund.status === "processed") {
-        updateData.refundStatus = "completed";
-        updateData.refundDate = new Date().toISOString();
-      }
-
+      // Update booking with refund details
       await updateBookingRefundStatus(
         bookingId,
         refund.status === "processed" ? "completed" : "processing",
-        refundAmount
+        refundAmount,
+        refundPercentage,
+        updatedVendorPayoutAmount
       );
 
       return NextResponse.json(
@@ -129,13 +151,20 @@ export async function POST(request: NextRequest) {
           success: true,
           refundId: refund.id,
           refundAmount,
-          message: "Refund processed successfully",
+          refundPercentage,
+          message: `Refund processed successfully. ${refundPercentage}% of trip cost refunded.`,
         },
         { status: 200 }
       );
     } catch (refundError) {
       // Update booking status to failed
-      await updateBookingRefundStatus(bookingId, "rejected", refundAmount);
+      await updateBookingRefundStatus(
+        bookingId,
+        "rejected",
+        refundAmount,
+        refundPercentage,
+        updatedVendorPayoutAmount
+      );
       console.error("Error processing refund:", refundError);
       return NextResponse.json(
         { error: "Failed to process refund" },
@@ -155,7 +184,9 @@ export async function POST(request: NextRequest) {
 async function updateBookingRefundStatus(
   bookingId: string,
   refundStatus: "none" | "requested" | "processing" | "completed" | "rejected",
-  refundAmount?: number
+  refundAmount?: number,
+  refundPercentage?: number,
+  vendorPayoutAmount?: number
 ) {
   const updateExpression: string[] = ["refundStatus = :refundStatus"];
   const expressionAttributeValues: any = {
@@ -165,6 +196,16 @@ async function updateBookingRefundStatus(
   if (refundAmount !== undefined) {
     updateExpression.push("refundAmount = :refundAmount");
     expressionAttributeValues[":refundAmount"] = refundAmount;
+  }
+
+  if (refundPercentage !== undefined) {
+    updateExpression.push("refundPercentage = :refundPercentage");
+    expressionAttributeValues[":refundPercentage"] = refundPercentage;
+  }
+
+  if (vendorPayoutAmount !== undefined) {
+    updateExpression.push("vendorPayoutAmount = :vendorPayoutAmount");
+    expressionAttributeValues[":vendorPayoutAmount"] = vendorPayoutAmount;
   }
 
   if (refundStatus === "completed") {

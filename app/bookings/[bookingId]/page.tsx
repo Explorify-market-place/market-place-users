@@ -1,5 +1,9 @@
 import { auth } from "@/auth";
-import { getBookingById, getPlanById, getDepartureById } from "@/lib/db-helpers";
+import {
+  getBookingById,
+  getPlanById,
+  getDepartureById,
+} from "@/lib/db-helpers";
 import { redirect, notFound } from "next/navigation";
 import {
   CheckCircle,
@@ -36,7 +40,7 @@ export default async function BookingSuccessPage({
   }
 
   const plan = await getPlanById(booking.planId);
-  const departure = booking.departureId 
+  const departure = booking.departureId
     ? await getDepartureById(booking.departureId)
     : null;
 
@@ -101,7 +105,9 @@ export default async function BookingSuccessPage({
                 {/* Departure Details Section */}
                 {departure && (
                   <div className="pt-4 border-t border-border/30">
-                    <h3 className="font-semibold mb-3">Departure Information</h3>
+                    <h3 className="font-semibold mb-3">
+                      Departure Information
+                    </h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -197,12 +203,34 @@ export default async function BookingSuccessPage({
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-border/30">
-                  <div className="flex justify-between items-center text-lg">
-                    <span className="font-semibold">Total Amount Paid</span>
-                    <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                      ₹{booking.totalAmount.toLocaleString()}
+                <div className="pt-4 border-t border-border/30 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Trip Cost ({booking.numPeople} × ₹
+                      {Math.round(
+                        (booking.tripCost || 0) / booking.numPeople
+                      ).toLocaleString()}
+                      )
                     </span>
+                    <span className="font-semibold">
+                      ₹{(booking.tripCost || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Platform Fee (2%)
+                    </span>
+                    <span className="font-semibold">
+                      ₹{(booking.platformFee || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="pt-3 border-t border-border/30">
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="font-semibold">Total Amount Paid</span>
+                      <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        ₹{booking.totalAmount.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -216,6 +244,7 @@ export default async function BookingSuccessPage({
               bookingId={booking.bookingId}
               tripDate={booking.tripDate}
               bookingStatus={booking.bookingStatus}
+              tripCost={booking.tripCost || booking.totalAmount}
             />
 
             <div className="flex flex-col sm:flex-row gap-4">

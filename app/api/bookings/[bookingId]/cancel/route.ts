@@ -55,19 +55,28 @@ export async function POST(
       );
     }
 
-    // Calculate hours until trip (24 hour policy for user platform)
-    const hoursUntilTrip =
-      (tripDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    // Calculate days until trip for refund policy
+    const daysUntilTrip = Math.ceil(
+      (tripDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
-    if (hoursUntilTrip < 24) {
-      return NextResponse.json(
-        {
-          error: "Cancellation not allowed within 24 hours of trip start",
-          message: "Please contact support for assistance",
-        },
-        { status: 400 }
-      );
+    // Determine refund eligibility
+    let refundPercentage = 0;
+    let refundMessage = "";
+    
+    if (daysUntilTrip >= 15) {
+      refundPercentage = 100;
+      refundMessage = "Full refund (100% of trip cost)";
+    } else if (daysUntilTrip >= 8) {
+      refundPercentage = 50;
+      refundMessage = "Partial refund (50% of trip cost)";
+    } else {
+      refundPercentage = 0;
+      refundMessage = "No refund available";
     }
+
+    // Allow cancellation even with 0% refund, but inform user
+    // They might want to cancel anyway to free up their booking
 
     // Restore departure capacity
     try {
@@ -79,11 +88,11 @@ export async function POST(
     }
 
     // Mark booking as cancelled and set refund as requested
+    // Note: vendorPayoutStatus stays "pending" - will be adjusted by refund API based on refund percentage
     await updateBooking(bookingId, {
       bookingStatus: "cancelled",
       refundStatus: "requested",
       cancelledAt: new Date().toISOString(),
-      vendorPayoutStatus: "failed", // No payout to vendor for cancelled bookings
     });
 
     // Call the refund API to process the refund with Razorpay
@@ -123,8 +132,9 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Booking cancelled and refund initiated successfully",
+      message: `Booking cancelled successfully. ${refundMessage}`,
       refundAmount: refundData.refundAmount,
+      refundPercentage: refundData.refundPercentage,
       refundId: refundData.refundId,
       bookingId,
     });

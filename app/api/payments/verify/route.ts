@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
     const vendorPayoutAmount = tripCost - platformCut;
 
     // Verify total amount matches (trip cost + platform fee)
-    if (Math.abs(totalAmountFromBody - expectedTotal) > 1) {
-      // Allow 1 rupee difference for rounding
+    if (Math.abs(totalAmountFromBody - expectedTotal) > 5) {
+      // Allow 5 rupee difference for cumulative rounding errors
       console.log("Amount mismatch:", {
         totalAmount: totalAmountFromBody,
         expectedTotal,
@@ -192,6 +192,8 @@ export async function POST(request: NextRequest) {
       numPeople: numAdults,
       paymentStatus: "completed",
       bookingStatus: "confirmed",
+      tripCost,
+      platformFee,
       totalAmount: totalAmountFromBody,
       createdAt: new Date().toISOString(),
       razorpayOrderId: orderId,

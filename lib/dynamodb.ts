@@ -85,7 +85,9 @@ export interface DynamoDBBooking {
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
   bookingStatus?: "confirmed" | "cancelled" | "completed"; // Trip status
-  totalAmount: number; // Total paid by user (trip cost + platform fee)
+  tripCost: number; // Base trip cost (plan.price × numPeople)
+  platformFee: number; // 2% fee on tripCost, paid by user
+  totalAmount: number; // tripCost + platformFee (total paid by user)
   createdAt: string;
 
   // Razorpay payment fields
@@ -95,7 +97,8 @@ export interface DynamoDBBooking {
 
   // Refund tracking
   refundStatus: "none" | "requested" | "processing" | "completed" | "rejected";
-  refundAmount?: number;
+  refundPercentage?: number; // Percentage of tripCost refunded (0, 50, or 100)
+  refundAmount?: number; // Actual rupees refunded to user
   refundDate?: string;
   razorpayRefundId?: string;
   cancelledAt?: string;
