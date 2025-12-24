@@ -22,7 +22,8 @@ export const dynamoDb = DynamoDBDocumentClient.from(client, {
 export const PLANS_TABLE = process.env.DYNAMODB_PLANS_TABLE || "TravelPlans";
 export const USERS_TABLE = process.env.DYNAMODB_USERS_TABLE || "Users";
 export const BOOKINGS_TABLE = process.env.DYNAMODB_BOOKINGS_TABLE || "Bookings";
-export const DEPARTURES_TABLE = process.env.DYNAMODB_DEPARTURES_TABLE || "Departures";
+export const DEPARTURES_TABLE =
+  process.env.DYNAMODB_DEPARTURES_TABLE || "Departures";
 
 // Type definitions for DynamoDB items
 export interface DynamoDBUser {
@@ -72,6 +73,9 @@ export interface DynamoDBDeparture {
   totalCapacity: number; // Max people for this departure
   bookedSeats: number; // Current bookings count (availableSeats = totalCapacity - bookedSeats)
   status: "scheduled" | "confirmed" | "cancelled" | "completed";
+  isActive: boolean; // false if departure cancelled by vendor
+  cancelledAt?: string; // When vendor cancelled the departure
+  cancellationReason?: string; // Why vendor cancelled
   createdAt: string;
   updatedAt: string;
 }
@@ -102,6 +106,7 @@ export interface DynamoDBBooking {
   refundDate?: string;
   razorpayRefundId?: string;
   cancelledAt?: string;
+  cancellationReason?: string; // Reason for cancellation (user or vendor)
 
   // Vendor payout tracking
   vendorPayoutStatus: "pending" | "processing" | "completed" | "failed";

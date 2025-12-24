@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
         const isFuture = departureDate > now;
         const isBookable =
           dep.status === "scheduled" || dep.status === "confirmed";
-        return isFuture && isBookable;
+        const isActive = dep.isActive !== false;
+        return isFuture && isBookable && isActive;
       })
       .map((dep) => ({
         ...dep,

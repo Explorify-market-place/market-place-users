@@ -63,7 +63,7 @@ export async function POST(
     // Determine refund eligibility
     let refundPercentage = 0;
     let refundMessage = "";
-    
+
     if (daysUntilTrip >= 15) {
       refundPercentage = 100;
       refundMessage = "Full refund (100% of trip cost)";
@@ -97,28 +97,89 @@ export async function POST(
 
     // Call the refund API to process the refund with Razorpay
     // This uses Sidharth's refund logic which handles Razorpay processing
-    const refundResponse = await fetch(
-      `${
-        process.env.NEXTAUTH_URL || "http://localhost:3000"
-      }/api/payments/refund`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: request.headers.get("cookie") || "",
-        },
-        body: JSON.stringify({ bookingId }),
-      }
-    );
+    const refundUrl = `${
+      process.env.NEXTAUTH_URL || "http://localhost:3000"
+    }/api/payments/refund`;
 
-    const refundData = await refundResponse.json();
+    console.log("Calling refund API:", { url: refundUrl, bookingId });
+
+    const refundResponse = await fetch(refundUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: request.headers.get("cookie") || "",
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+
+    // Log response details for debugging
+    console.log("Refund API response:", {
+      status: refundResponse.status,
+      statusText: refundResponse.statusText,
+      contentType: refundResponse.headers.get("content-type"),
+    });
+
+    // Get the raw response text first
+    const responseText = await refundResponse.text();
+    const contentType = refundResponse.headers.get("content-type") || "";
+
+    let refundData;
+
+    // Check if response is actually JSON
+    if (!contentType.includes("application/json")) {
+      console.error("Refund API returned non-JSON response");
+      console.error("Content-Type:", contentType);
+      console.error("Status:", refundResponse.status);
+      console.error("Raw response:", responseText.substring(0, 1000));
+
+      // Keep booking cancelled since seats already freed, but mark refund as rejected
+      await updateBooking(bookingId, {
+        bookingStatus: "cancelled",
+        refundStatus: "rejected",
+      });
+
+      return NextResponse.json(
+        {
+          error:
+            "Refund API returned a non-JSON response (likely an error page)",
+          hint: "Check if the refund API route exists and is accessible. This could be a server error or routing issue.",
+          details: {
+            status: refundResponse.status,
+            contentType,
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    try {
+      refundData = JSON.parse(responseText);
+    } catch (parseError) {
+      // Handle malformed JSON
+      console.error("Failed to parse refund response as JSON");
+      console.error("Raw refund response:", responseText.substring(0, 1000));
+
+      // Keep booking cancelled since seats already freed, but mark refund as rejected
+      await updateBooking(bookingId, {
+        bookingStatus: "cancelled",
+        refundStatus: "rejected",
+      });
+
+      return NextResponse.json(
+        {
+          error:
+            "Refund API returned an invalid response. Check server logs for details.",
+          hint: "This is likely due to insufficient test balance in Razorpay. Booking is cancelled but refund needs manual processing.",
+        },
+        { status: 500 }
+      );
+    }
 
     if (!refundResponse.ok) {
-      // Revert cancellation if refund fails
+      // Keep booking cancelled since seats already freed, but mark refund as rejected
       await updateBooking(bookingId, {
-        bookingStatus: booking.bookingStatus || "confirmed",
+        bookingStatus: "cancelled",
         refundStatus: "rejected",
-        vendorPayoutStatus: booking.vendorPayoutStatus || "pending",
       });
 
       return NextResponse.json(
