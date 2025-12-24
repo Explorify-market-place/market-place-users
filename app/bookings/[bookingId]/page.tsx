@@ -1,5 +1,9 @@
 import { auth } from "@/auth";
-import { getBookingById, getPlanById } from "@/lib/db-helpers";
+import {
+  getBookingById,
+  getPlanById,
+  getDepartureById,
+} from "@/lib/db-helpers";
 import { redirect, notFound } from "next/navigation";
 import {
   CheckCircle,
@@ -8,6 +12,7 @@ import {
   Users,
   CreditCard,
   ArrowLeft,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -35,6 +40,9 @@ export default async function BookingSuccessPage({
   }
 
   const plan = await getPlanById(booking.planId);
+  const departure = booking.departureId
+    ? await getDepartureById(booking.departureId)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
@@ -47,20 +55,34 @@ export default async function BookingSuccessPage({
 
       <div className="relative z-10 container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
-          {/* Success Card */}
+          {/* Status Card */}
           <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-3xl p-8 md:p-12 text-center mb-8">
-            {/* Success Icon */}
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center animate-scale-in">
+            {/* Status Icon */}
+            <div
+              className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center animate-scale-in ${
+                booking.bookingStatus === "cancelled"
+                  ? "bg-gradient-to-br from-red-500 to-rose-600"
+                  : "bg-gradient-to-br from-green-500 to-emerald-600"
+              }`}
+            >
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
 
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Booking Confirmed!
+                {booking.bookingStatus === "cancelled"
+                  ? "Booking Cancelled"
+                  : "Booking Confirmed!"}
               </span>
             </h1>
             <p className="text-lg text-muted-foreground mb-2">
-              Your payment was successful
+              {booking.bookingStatus === "cancelled"
+                ? booking.refundStatus === "completed"
+                  ? `Refund processed: ₹${booking.refundAmount?.toLocaleString()}`
+                  : booking.refundStatus === "processing"
+                  ? "Refund in progress"
+                  : "Payment will be refunded"
+                : "Your payment was successful"}
             </p>
             <p className="text-sm text-muted-foreground">
               Booking ID: <span className="font-mono">{booking.bookingId}</span>
@@ -94,7 +116,45 @@ export default async function BookingSuccessPage({
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                {/* Departure Details Section */}
+                {departure && (
+                  <div className="pt-4 border-t border-border/30">
+                    <h3 className="font-semibold mb-3">
+                      Departure Information
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground">
+                            Pickup Time
+                          </div>
+                          <div className="font-semibold">
+                            {departure.pickupTime}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <MapPin className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-muted-foreground">
+                            Pickup Location
+                          </div>
+                          <div className="font-semibold">
+                            {departure.pickupLocation}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-border/30">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Calendar className="w-5 h-5 text-primary" />
@@ -104,7 +164,7 @@ export default async function BookingSuccessPage({
                         Travel Date
                       </div>
                       <div className="font-semibold">
-                        {new Date(booking.dateBooked).toLocaleDateString(
+                        {new Date(booking.tripDate).toLocaleDateString(
                           "en-IN",
                           {
                             day: "numeric",
@@ -157,25 +217,157 @@ export default async function BookingSuccessPage({
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-border/30">
-                  <div className="flex justify-between items-center text-lg">
-                    <span className="font-semibold">Total Amount Paid</span>
-                    <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                      ₹{booking.totalAmount.toLocaleString()}
+                <div className="pt-4 border-t border-border/30 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Trip Cost ({booking.numPeople} × ₹
+                      {Math.round(
+                        (booking.tripCost || 0) / booking.numPeople
+                      ).toLocaleString()}
+                      )
                     </span>
+                    <span className="font-semibold">
+                      ₹{(booking.tripCost || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Platform Fee (2%)
+                    </span>
+                    <span className="font-semibold">
+                      ₹{(booking.platformFee || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="pt-3 border-t border-border/30">
+                    <div className="flex justify-between items-center text-lg">
+                      <span className="font-semibold">Total Amount Paid</span>
+                      <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        ₹{booking.totalAmount.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
+          {/* Cancellation & Refund Details */}
+          {booking.bookingStatus === "cancelled" && (
+            <div className="bg-background/40 backdrop-blur-lg border border-red-500/30 rounded-2xl p-6 md:p-8 mb-6">
+              <h2 className="text-2xl font-bold mb-6 text-red-600 dark:text-red-400">
+                Cancellation & Refund Details
+              </h2>
+
+              <div className="space-y-4">
+                {booking.cancelledAt && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-muted-foreground">Cancelled On</span>
+                    <span className="font-semibold text-right">
+                      {new Date(booking.cancelledAt).toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                )}
+
+                {booking.cancellationReason && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-muted-foreground">Reason</span>
+                    <span className="font-semibold text-right max-w-md">
+                      {booking.cancellationReason}
+                    </span>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-border/30">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground">
+                      Refund Percentage
+                    </span>
+                    <span className="font-semibold text-lg">
+                      {booking.refundPercentage || 0}%
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted-foreground">Refund Amount</span>
+                    <span className="font-bold text-xl text-green-600 dark:text-green-400">
+                      ₹{(booking.refundAmount || 0).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Refund Status</span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        booking.refundStatus === "completed"
+                          ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                          : booking.refundStatus === "processing"
+                          ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                          : booking.refundStatus === "rejected"
+                          ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                          : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                      {booking.refundStatus === "completed"
+                        ? "Completed"
+                        : booking.refundStatus === "processing"
+                        ? "Processing"
+                        : booking.refundStatus === "rejected"
+                        ? "Rejected"
+                        : "Pending"}
+                    </span>
+                  </div>
+
+                  {booking.refundDate && (
+                    <div className="flex justify-between items-start mt-2">
+                      <span className="text-muted-foreground">Refunded On</span>
+                      <span className="font-semibold text-right">
+                        {new Date(booking.refundDate).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {booking.refundStatus === "processing" && (
+                  <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                      💡 Your refund is being processed. It typically takes 5-7
+                      business days to reflect in your account.
+                    </p>
+                  </div>
+                )}
+
+                {booking.refundStatus === "rejected" && (
+                  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      ⚠️ Refund failed due to insufficient balance in test mode.
+                      Contact support for assistance.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="space-y-4">
             {/* Cancel Button (shows only if eligible) */}
             <CancelBookingButton
               bookingId={booking.bookingId}
-              tripDate={booking.dateBooked}
+              tripDate={booking.tripDate}
               bookingStatus={booking.bookingStatus}
+              tripCost={booking.tripCost || booking.totalAmount}
             />
 
             <div className="flex flex-col sm:flex-row gap-4">

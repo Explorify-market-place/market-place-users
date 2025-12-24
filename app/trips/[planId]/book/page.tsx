@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -10,28 +10,32 @@ import {
   CreditCard,
   Shield,
   Loader2,
+  MapPin,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { DynamoDBPlan, DynamoDBDeparture } from "@/lib/dynamodb";
 
 interface BookingPageProps {
   params: Promise<{ planId: string }>;
 }
 
-interface Plan {
-  planId: string;
-  name: string;
-  price: number;
-  image: string;
-  route: string[];
-  description: string;
+interface DepartureWithAvailability extends DynamoDBDeparture {
+  availableSeats: number;
 }
 
 export default function BookingPage({ params }: BookingPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const departureId = searchParams.get("departureId");
+
   const [planId, setPlanId] = useState<string>("");
-  const [plan, setPlan] = useState<Plan | null>(null);
+  const [plan, setPlan] = useState<DynamoDBPlan | null>(null);
+  const [departure, setDeparture] = useState<DepartureWithAvailability | null>(
+    null
+  );
   const [numAdults, setNumAdults] = useState(1);
-  const [travelDate, setTravelDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -42,16 +46,38 @@ export default function BookingPage({ params }: BookingPageProps) {
   useEffect(() => {
     params.then(({ planId: id }) => {
       setPlanId(id);
-      fetchPlan(id);
+      fetchData(id);
     });
-  }, [params]);
+  }, [params, departureId]);
 
-  const fetchPlan = async (id: string) => {
+  const fetchData = async (id: string) => {
     try {
-      const response = await fetch(`/api/plans/${id}`);
-      if (!response.ok) throw new Error("Failed to fetch plan");
-      const data = await response.json();
-      setPlan(data.plan);
+      // Fetch plan
+      const planResponse = await fetch(`/api/plans/${id}`);
+      if (!planResponse.ok) throw new Error("Failed to fetch plan");
+      const planData = await planResponse.json();
+      setPlan(planData.plan);
+
+      // Fetch departure if departureId is provided
+      if (departureId) {
+        const deptResponse = await fetch(`/api/departures?planId=${id}`);
+        if (deptResponse.ok) {
+          const deptData = await deptResponse.json();
+          const selectedDeparture = deptData.departures.find(
+            (d: DepartureWithAvailability) => d.departureId === departureId
+          );
+
+          if (selectedDeparture) {
+            setDeparture(selectedDeparture);
+          } else {
+            setError("Selected departure not found");
+          }
+        }
+      } else {
+        setError(
+          "No departure selected. Please select a departure from the trip details page."
+        );
+      }
     } catch (err) {
       setError("Failed to load trip details");
       console.error(err);
@@ -65,6 +91,8 @@ export default function BookingPage({ params }: BookingPageProps) {
   const platformFee = Math.round(tripCost * (PLATFORM_FEE_PERCENT / 100));
   const totalAmount = tripCost + platformFee;
 
+  const maxAdults = departure ? Math.min(10, departure.availableSeats) : 10;
+
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       // Check if already loaded
@@ -72,7 +100,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         resolve(true);
         return;
       }
-      
+
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
@@ -83,8 +111,13 @@ export default function BookingPage({ params }: BookingPageProps) {
   };
 
   const handlePayment = async () => {
-    if (!travelDate) {
-      setError("Please select a travel date");
+    if (!departure) {
+      setError("No departure selected");
+      return;
+    }
+
+    if (numAdults > departure.availableSeats) {
+      setError(`Only ${departure.availableSeats} seats available`);
       return;
     }
 
@@ -105,7 +138,7 @@ export default function BookingPage({ params }: BookingPageProps) {
         body: JSON.stringify({
           planId,
           numPeople: numAdults,
-          dateBooked: travelDate,
+          departureId: departure.departureId,
         }),
       });
 
@@ -115,7 +148,7 @@ export default function BookingPage({ params }: BookingPageProps) {
       }
 
       const orderData = await orderResponse.json();
-      
+
       // Store order ID for later use
       const createdOrderId = orderData.orderId;
 
@@ -130,19 +163,20 @@ export default function BookingPage({ params }: BookingPageProps) {
         handler: async function (response: any) {
           try {
             console.log("Razorpay response:", response);
-            
+
             const verifyPayload = {
               orderId: createdOrderId, // Use the order ID we created
               paymentId: response.razorpay_payment_id,
               signature: response.razorpay_signature,
               planId,
+              departureId: departure.departureId,
               numAdults,
-              travelDate,
+              travelDate: departure.departureDate,
               totalAmount,
             };
-            
+
             console.log("Sending verification payload:", verifyPayload);
-            
+
             // Verify payment
             const verifyResponse = await fetch("/api/payments/verify", {
               method: "POST",
@@ -150,8 +184,16 @@ export default function BookingPage({ params }: BookingPageProps) {
               body: JSON.stringify(verifyPayload),
             });
 
+            console.log("Verify response status:", verifyResponse.status);
+
             if (!verifyResponse.ok) {
-              const errorData = await verifyResponse.json();
+              let errorData;
+              try {
+                errorData = await verifyResponse.json();
+              } catch (e) {
+                console.error("Failed to parse error response:", e);
+                errorData = { error: `Server error: ${verifyResponse.status}` };
+              }
               console.error("Verification error:", errorData);
               throw new Error(errorData.error || "Payment verification failed");
             }
@@ -262,6 +304,81 @@ export default function BookingPage({ params }: BookingPageProps) {
                 </div>
               </div>
 
+              {/* Departure Details */}
+              {departure && (
+                <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6">
+                  <h2 className="text-2xl font-bold mb-4">Departure Details</h2>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div className="text-sm text-muted-foreground">
+                          Departure Date
+                        </div>
+                        <div className="font-semibold">
+                          {new Date(departure.departureDate).toLocaleDateString(
+                            "en-US",
+                            {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            }
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div className="text-sm text-muted-foreground">
+                          Pickup Time
+                        </div>
+                        <div className="font-semibold">
+                          {departure.pickupTime}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div className="text-sm text-muted-foreground">
+                          Pickup Location
+                        </div>
+                        <div className="font-semibold">
+                          {departure.pickupLocation}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Users className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div className="text-sm text-muted-foreground">
+                          Available Seats
+                        </div>
+                        <div className="font-semibold">
+                          {departure.availableSeats} / {departure.totalCapacity}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {departure.availableSeats < 5 && (
+                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-semibold text-yellow-600 dark:text-yellow-400">
+                          Limited Availability
+                        </div>
+                        <div className="text-yellow-600/80 dark:text-yellow-400/80">
+                          Only {departure.availableSeats} seats remaining. Book
+                          soon!
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Number of Adults */}
               <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6">
                 <label className="flex items-center gap-2 text-lg font-semibold mb-4">
@@ -284,32 +401,18 @@ export default function BookingPage({ params }: BookingPageProps) {
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => setNumAdults(Math.min(10, numAdults + 1))}
-                    disabled={numAdults >= 10}
+                    onClick={() =>
+                      setNumAdults(Math.min(maxAdults, numAdults + 1))
+                    }
+                    disabled={numAdults >= maxAdults}
                     className="rounded-full w-12 h-12"
                   >
                     +
                   </Button>
                   <span className="text-muted-foreground ml-2">
-                    (Max 10 adults)
+                    (Max {maxAdults} {maxAdults === 1 ? "person" : "people"})
                   </span>
                 </div>
-              </div>
-
-              {/* Travel Date */}
-              <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6">
-                <label className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <Calendar className="w-5 h-5" />
-                  Travel Date
-                </label>
-                <input
-                  type="date"
-                  value={travelDate}
-                  onChange={(e) => setTravelDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full px-4 py-3 rounded-xl bg-background/50 backdrop-blur-sm border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-200"
-                  required
-                />
               </div>
 
               {/* Error Message */}
@@ -350,7 +453,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
                 <Button
                   onClick={handlePayment}
-                  disabled={isProcessing || !travelDate}
+                  disabled={isProcessing || !departure}
                   size="lg"
                   className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 text-lg py-6"
                 >
@@ -367,10 +470,23 @@ export default function BookingPage({ params }: BookingPageProps) {
                   )}
                 </Button>
 
-                <div className="mt-6 pt-6 border-t border-border/30">
+                <div className="mt-6 pt-6 border-t border-border/30 space-y-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Shield className="w-4 h-4" />
                     <span>Secure payment powered by Razorpay</span>
+                  </div>
+
+                  {/* Cancellation Policy */}
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm font-semibold text-foreground mb-2">
+                      Cancellation Policy:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• 15+ days before trip: 100% refund of trip cost</li>
+                      <li>• 8-14 days before trip: 50% refund of trip cost</li>
+                      <li>• 1-7 days before trip: No refund</li>
+                      <li>• Platform fee (2%) is non-refundable</li>
+                    </ul>
                   </div>
                 </div>
               </div>

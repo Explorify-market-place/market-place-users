@@ -6,13 +6,26 @@ import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamoDb, BOOKINGS_TABLE } from "@/lib/dynamodb";
 
 export async function POST(request: NextRequest) {
+  // Wrap everything in try-catch to ensure we always return JSON
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let body;
+    try {
+      body = await request.json();
+    } catch (jsonError) {
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
     }
 
-    const { bookingId } = await request.json();
+    const { bookingId, vendorCancellation, vendorId } = body;
+
+    const session = await auth();
+
+    // Require authentication for user-initiated cancellations
+    if (!vendorCancellation && !session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     if (!bookingId) {
       return NextResponse.json(
@@ -27,8 +40,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Verify user owns this booking or is admin
-    if (booking.userId !== session.user.id && session.user.role !== "admin") {
+    // Vendor cancellation verification: must provide vendorId and must own the plan
+    if (vendorCancellation) {
+      if (!vendorId) {
+        return NextResponse.json(
+          { error: "vendorId is required for vendor cancellations" },
+          { status: 400 }
+        );
+      }
+
+      // Fetch the plan to verify vendor ownership
+      const { GetCommand } = await import("@aws-sdk/lib-dynamodb");
+      const { PLANS_TABLE } = await import("@/lib/dynamodb");
+
+      const planCommand = new GetCommand({
+        TableName: PLANS_TABLE,
+        Key: { planId: booking.planId },
+      });
+
+      const planResult = await dynamoDb.send(planCommand);
+      const plan = planResult.Item;
+
+      if (!plan) {
+        return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      }
+
+      if (plan.vendorId !== vendorId) {
+        return NextResponse.json(
+          { error: "Unauthorized: You do not own this plan" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Verify user owns this booking or is admin (for user cancellations)
+    if (
+      !vendorCancellation &&
+      booking.userId !== session.user.id &&
+      session.user.role !== "admin"
+    ) {
       return NextResponse.json(
         { error: "Unauthorized to refund this booking" },
         { status: 403 }
@@ -59,31 +109,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate hours until trip start
-    const tripStartDate = new Date(booking.dateBooked);
-    const now = new Date();
-    const hoursUntilTrip =
-      (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    // Vendor cancellation: always 100% tripCost refund
+    let refundPercentage = 0;
+    let refundAmount = 0;
+    let updatedVendorPayoutAmount = 0;
 
-    // Simple policy: Full refund if cancelled 24+ hours before trip
-    if (tripStartDate < now) {
-      return NextResponse.json(
-        { error: "Trip has already started. Refund not available." },
-        { status: 400 }
+    if (vendorCancellation) {
+      // Vendor cancelled: full refund, vendor gets nothing
+      refundPercentage = 100;
+      refundAmount = booking.tripCost; // 100% of trip cost
+      updatedVendorPayoutAmount = 0; // Vendor's fault, no payout
+    } else {
+      // User cancellation: tiered refund policy
+      const tripStartDate = new Date(booking.tripDate);
+      const now = new Date();
+      const daysUntilTrip = Math.ceil(
+        (tripStartDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      // Check if trip has already passed
+      if (tripStartDate < now) {
+        return NextResponse.json(
+          { error: "Trip has already started. Refund not available." },
+          { status: 400 }
+        );
+      }
+
+      // Tiered refund policy based on days until trip
+      if (daysUntilTrip >= 15) {
+        refundPercentage = 100; // Full refund
+      } else if (daysUntilTrip >= 8 && daysUntilTrip <= 14) {
+        refundPercentage = 50; // 50% refund
+      } else if (daysUntilTrip >= 1 && daysUntilTrip <= 7) {
+        refundPercentage = 0; // No refund
+      }
+
+      if (refundPercentage === 0 && booking.bookingStatus !== "cancelled") {
+        return NextResponse.json(
+          {
+            error: `Refund not available. Cancellations must be made at least 8 days before the trip for a 50% refund, or 15+ days for a full refund.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Calculate refund amount (percentage of tripCost only, platform fee is non-refundable)
+      const tripCostRefund = Math.round(
+        (booking.tripCost * refundPercentage) / 100
+      );
+      refundAmount = tripCostRefund;
+
+      // Calculate updated vendor payout amount
+      const remainingTripCost = booking.tripCost - tripCostRefund;
+      updatedVendorPayoutAmount = Math.round(
+        remainingTripCost *
+          ((100 -
+            (booking.platformCut
+              ? (booking.platformCut / booking.tripCost) * 100
+              : 15)) /
+            100)
       );
     }
-
-    if (hoursUntilTrip < 24 && booking.bookingStatus !== "cancelled") {
-      return NextResponse.json(
-        {
-          error: "Refund must be requested at least 24 hours before trip start",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Full refund for all eligible cancellations
-    const refundAmount = booking.totalAmount;
 
     if (!booking.razorpayPaymentId) {
       return NextResponse.json(
@@ -92,8 +178,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update booking status to processing
-    await updateBookingRefundStatus(bookingId, "processing", refundAmount);
+    // Validate refund amount
+    if (refundAmount <= 0) {
+      return NextResponse.json(
+        { error: "Refund amount must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
+    if (refundAmount > booking.totalAmount) {
+      return NextResponse.json(
+        { error: "Refund amount cannot exceed total amount paid" },
+        { status: 400 }
+      );
+    }
+
+    console.log("Refund request:", {
+      bookingId,
+      paymentId: booking.razorpayPaymentId,
+      refundAmount,
+      refundPercentage,
+      tripCost: booking.tripCost,
+      totalAmount: booking.totalAmount,
+      vendorCancellation,
+    });
+
+    // Update booking status to processing with refund details
+    await updateBookingRefundStatus(
+      bookingId,
+      "processing",
+      refundAmount,
+      refundPercentage,
+      updatedVendorPayoutAmount
+    );
 
     try {
       // Process refund with Razorpay
@@ -102,26 +219,19 @@ export async function POST(request: NextRequest) {
         refundAmount,
         {
           bookingId,
-          reason: "Customer requested refund",
+          reason: vendorCancellation
+            ? "Vendor cancelled departure"
+            : `${refundPercentage}% refund - Cancellation policy`,
         }
       );
 
-      // Store refund ID immediately, status will be updated via webhook
-      const updateData: any = {
-        refundRazorpayId: refund.id,
-        refundAmount,
-      };
-
-      // If Razorpay immediately marks as processed (test mode), update status
-      if (refund.status === "processed") {
-        updateData.refundStatus = "completed";
-        updateData.refundDate = new Date().toISOString();
-      }
-
+      // Update booking with refund details
       await updateBookingRefundStatus(
         bookingId,
         refund.status === "processed" ? "completed" : "processing",
-        refundAmount
+        refundAmount,
+        refundPercentage,
+        updatedVendorPayoutAmount
       );
 
       return NextResponse.json(
@@ -129,23 +239,45 @@ export async function POST(request: NextRequest) {
           success: true,
           refundId: refund.id,
           refundAmount,
-          message: "Refund processed successfully",
+          refundPercentage,
+          message: `Refund processed successfully. ${refundPercentage}% of trip cost refunded.`,
         },
         { status: 200 }
       );
     } catch (refundError) {
       // Update booking status to failed
-      await updateBookingRefundStatus(bookingId, "rejected", refundAmount);
+      await updateBookingRefundStatus(
+        bookingId,
+        "rejected",
+        refundAmount,
+        refundPercentage,
+        updatedVendorPayoutAmount
+      );
       console.error("Error processing refund:", refundError);
+
+      // Extract error message from Razorpay error
+      const errorMessage =
+        refundError instanceof Error
+          ? refundError.message
+          : "Unknown refund error";
+
       return NextResponse.json(
-        { error: "Failed to process refund" },
+        {
+          error: "Failed to process refund",
+          details: errorMessage,
+        },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error("Error in refund endpoint:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to process refund request" },
+      {
+        error: "Failed to process refund request",
+        details: errorMessage,
+      },
       { status: 500 }
     );
   }
@@ -155,7 +287,9 @@ export async function POST(request: NextRequest) {
 async function updateBookingRefundStatus(
   bookingId: string,
   refundStatus: "none" | "requested" | "processing" | "completed" | "rejected",
-  refundAmount?: number
+  refundAmount?: number,
+  refundPercentage?: number,
+  vendorPayoutAmount?: number
 ) {
   const updateExpression: string[] = ["refundStatus = :refundStatus"];
   const expressionAttributeValues: any = {
@@ -165,6 +299,16 @@ async function updateBookingRefundStatus(
   if (refundAmount !== undefined) {
     updateExpression.push("refundAmount = :refundAmount");
     expressionAttributeValues[":refundAmount"] = refundAmount;
+  }
+
+  if (refundPercentage !== undefined) {
+    updateExpression.push("refundPercentage = :refundPercentage");
+    expressionAttributeValues[":refundPercentage"] = refundPercentage;
+  }
+
+  if (vendorPayoutAmount !== undefined) {
+    updateExpression.push("vendorPayoutAmount = :vendorPayoutAmount");
+    expressionAttributeValues[":vendorPayoutAmount"] = vendorPayoutAmount;
   }
 
   if (refundStatus === "completed") {

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock, Package } from "lucide-react";
-import { getBookingsByUser, getPlanById } from "@/lib/db-helpers";
+import { getBookingsByUser, getPlanById, getDepartureById } from "@/lib/db-helpers";
 
 export default async function BookingsPage() {
   const session = await auth();
@@ -15,15 +15,20 @@ export default async function BookingsPage() {
   // Fetch user's bookings from DynamoDB
   const bookings = await getBookingsByUser(session.user.id);
 
-  // Fetch plan details for each booking
-  const bookingsWithPlans = await Promise.all(
+  // Fetch plan and departure details for each booking
+  const bookingsWithDetails = await Promise.all(
     bookings.map(async (booking) => {
       const plan = await getPlanById(booking.planId);
+      const departure = booking.departureId 
+        ? await getDepartureById(booking.departureId)
+        : null;
+      
       return {
         ...booking,
         tripTitle: plan?.name || "Unknown Trip",
         location: plan?.route?.join(" → ") || "Unknown",
         tripImage: plan?.image || "/placeholder-trip.jpg",
+        departure,
       };
     })
   );
@@ -52,7 +57,7 @@ export default async function BookingsPage() {
 
         {/* Bookings Content */}
         <div className="max-w-4xl mx-auto">
-          {bookingsWithPlans.length === 0 ? (
+          {bookingsWithDetails.length === 0 ? (
             // Empty State
             <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -74,7 +79,7 @@ export default async function BookingsPage() {
           ) : (
             // Bookings List
             <div className="space-y-4">
-              {bookingsWithPlans.map((booking) => (
+              {bookingsWithDetails.map((booking) => (
                 <Link
                   key={booking.bookingId}
                   href={`/bookings/${booking.bookingId}`}
@@ -101,10 +106,26 @@ export default async function BookingsPage() {
                             <span>
                               Travel Date:{" "}
                               {new Date(
-                                booking.dateBooked
+                                booking.tripDate
                               ).toLocaleDateString()}
                             </span>
                           </div>
+                          {booking.departure && (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                <span>
+                                  Pickup: {booking.departure.pickupTime}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4" />
+                                <span>
+                                  {booking.departure.pickupLocation}
+                                </span>
+                              </div>
+                            </>
+                          )}
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
                             <span>

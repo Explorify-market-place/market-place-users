@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if trip has started (optional validation)
-    const tripStartDate = new Date(booking.dateBooked);
+    const tripStartDate = new Date(booking.tripDate);
     const now = new Date();
     if (tripStartDate > now && session.user.role !== "admin") {
       return NextResponse.json(
