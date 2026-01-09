@@ -154,7 +154,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
       // Razorpay checkout options
       const options = {
-        key: orderData.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency,
         name: "ExplorifyTrips",
