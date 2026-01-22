@@ -1,7 +1,10 @@
 import { getAllActivePlans } from "@/lib/db-helpers";
 import Link from "next/link";
-import { MapPin, Calendar, Users, Star } from "lucide-react";
+import { MapPin, Clock, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
+import { getPublicUrl } from "@/lib/s3";
 
 export default async function TripsPage() {
   const plans = await getAllActivePlans();
@@ -40,65 +43,128 @@ export default async function TripsPage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {plans.map((plan) => (
-              <div
-                key={plan.planId}
-                className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-200 hover:scale-105 group"
-              >
-                {/* Trip Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={plan.image || "/placeholder-trip.jpg"}
-                    alt={plan.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                    <span className="text-sm font-medium">4.8</span>
-                  </div>
-                </div>
+            {plans.map((plan) => {
+              const mainImage = plan.images?.[0]
+                ? getPublicUrl(plan.images[0])
+                : "/placeholder-trip.jpg";
 
-                {/* Trip Details */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 line-clamp-1">
-                    {plan.name}
-                  </h3>
+              return (
+                <div
+                  key={plan.planId}
+                  className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-200 hover:scale-105 group"
+                >
+                  {/* Trip Image */}
+                  <div className="relative h-56 overflow-hidden">
+                    <Image
+                      src={mainImage}
+                      alt={plan.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
 
-                  {/* Route */}
-                  {plan.route && plan.route.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="line-clamp-1">
-                        {plan.route.join(" → ")}
+                    {/* Image Counter Badge */}
+                    {plan.images && plan.images.length > 1 && (
+                      <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-white" />
+                        <span className="text-xs font-medium text-white">
+                          {plan.images.length}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Duration Badge */}
+                    <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">
+                        {plan.duration.value} {plan.duration.unit}
                       </span>
                     </div>
-                  )}
+                  </div>
 
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {plan.description}
-                  </p>
+                  {/* Trip Details */}
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold mb-2 line-clamp-1">
+                      {plan.name}
+                    </h3>
 
-                  {/* Price and CTA */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border/30">
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Starting from
+                    {/* Location */}
+                    {(plan.startingPoint || plan.endingPoint) && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <span className="line-clamp-1">
+                          {plan.startingPoint && plan.endingPoint
+                            ? `${plan.startingPoint} → ${plan.endingPoint}`
+                            : plan.startingPoint || plan.endingPoint}
+                        </span>
                       </div>
-                      <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        ₹{plan.price.toLocaleString()}
+                    )}
+
+                    {/* Description */}
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {plan.description}
+                    </p>
+
+                    {/* Categories/Interests */}
+                    {(plan.categories?.length > 0 ||
+                      plan.interests?.length > 0) && (
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {plan.categories?.slice(0, 2).map((category) => (
+                          <Badge
+                            key={category}
+                            variant="secondary"
+                            className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-0"
+                          >
+                            {category}
+                          </Badge>
+                        ))}
+                        {plan.interests?.slice(0, 1).map((interest) => (
+                          <Badge
+                            key={interest}
+                            variant="secondary"
+                            className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-0"
+                          >
+                            {interest}
+                          </Badge>
+                        ))}
                       </div>
+                    )}
+
+                    {/* Highlights Preview */}
+                    {plan.highlights && plan.highlights.length > 0 && (
+                      <div className="mb-4 space-y-1">
+                        {plan.highlights.slice(0, 2).map((highlight, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-2 text-xs text-muted-foreground"
+                          >
+                            <span className="text-green-500 mt-0.5">✓</span>
+                            <span className="line-clamp-1">{highlight}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Price and CTA */}
+                    <div className="flex items-center justify-between pt-4 border-t border-border/30">
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Starting from
+                        </div>
+                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          ₹{plan.price.toLocaleString()}
+                        </div>
+                      </div>
+                      <Button
+                        asChild
+                        className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        <Link href={`/trips/${plan.planId}`}>View Details</Link>
+                      </Button>
                     </div>
-                    <Button
-                      asChild
-                      className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                    >
-                      <Link href={`/trips/${plan.planId}`}>Book Now</Link>
-                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
