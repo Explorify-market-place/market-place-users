@@ -32,13 +32,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!existingUser.password) {
           throw new Error(
-            "This account uses OAuth. Please sign in with Google."
+            "This account uses OAuth. Please sign in with Google.",
           );
         }
 
         const isValid = await verifyPassword(
           credentials.password as string,
-          existingUser.password
+          existingUser.password,
         );
 
         if (!isValid) {
@@ -75,6 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: "user",
             vendorVerified: false,
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           });
         }
       }
@@ -105,7 +106,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   pages: { signIn: "/auth/signin" },
-  session: { 
+  session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   },
