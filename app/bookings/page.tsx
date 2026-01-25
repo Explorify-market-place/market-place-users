@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock, Package } from "lucide-react";
 import { getBookingsByUser, getPlanById, getDepartureById } from "@/lib/db-helpers";
@@ -26,17 +27,17 @@ export default async function BookingsPage() {
       return {
         ...booking,
         tripTitle: plan?.name || "Unknown Trip",
-        location: plan?.route?.join(" → ") || "Unknown",
-        tripImage: plan?.image || "/placeholder-trip.jpg",
+        location: plan?.stops?.map(s => s.name).join(" → ") || "Unknown",
+        tripImage: plan?.images?.[0] || "/placeholder-trip.jpg",
         departure,
       };
     })
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       {/* Floating Orbs */}
       <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
@@ -46,7 +47,7 @@ export default async function BookingsPage() {
         {/* Header */}
         <div className="max-w-4xl mx-auto mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               My Bookings
             </span>
           </h1>
@@ -60,7 +61,7 @@ export default async function BookingsPage() {
           {bookingsWithDetails.length === 0 ? (
             // Empty State
             <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-12 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                 <Package className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold mb-3">No bookings yet</h2>
@@ -71,7 +72,7 @@ export default async function BookingsPage() {
               <Button
                 asChild
                 size="lg"
-                className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="rounded-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Link href="/trips">Browse Trips</Link>
               </Button>
@@ -87,9 +88,11 @@ export default async function BookingsPage() {
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex gap-4 flex-1">
-                      <img
+                      <Image
                         src={booking.tripImage}
                         alt={booking.tripTitle}
+                        width={80}
+                        height={80}
                         className="w-20 h-20 rounded-lg object-cover"
                       />
                       <div className="flex-1">
@@ -137,7 +140,7 @@ export default async function BookingsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                      <div className="text-2xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
                         ₹{booking.totalAmount.toLocaleString()}
                       </div>
                       <div className="flex flex-col gap-1 items-end">

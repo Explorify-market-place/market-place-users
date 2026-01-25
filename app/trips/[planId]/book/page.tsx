@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -254,9 +255,9 @@ export default function BookingPage({ params }: BookingPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       {/* Floating Orbs */}
       <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
@@ -273,7 +274,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Complete Your Booking
             </span>
           </h1>
@@ -285,16 +286,18 @@ export default function BookingPage({ params }: BookingPageProps) {
               <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6">
                 <h2 className="text-2xl font-bold mb-4">Trip Summary</h2>
                 <div className="flex gap-4">
-                  <img
-                    src={plan.image}
+                  <Image
+                    src={plan.images?.[0] || "/placeholder-trip.jpg"}
                     alt={plan.name}
+                    width={96}
+                    height={96}
                     className="w-24 h-24 rounded-lg object-cover"
                   />
                   <div>
                     <h3 className="font-bold text-lg">{plan.name}</h3>
-                    {plan.route && plan.route.length > 0 && (
+                    {plan.stops && plan.stops.length > 0 && (
                       <p className="text-sm text-muted-foreground">
-                        {plan.route.join(" → ")}
+                        {plan.stops.map(s => s.name).join(" → ")}
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground mt-1">
@@ -444,7 +447,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                       <span className="text-lg font-semibold">
                         Total Amount
                       </span>
-                      <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <span className="text-3xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         ₹{totalAmount.toLocaleString()}
                       </span>
                     </div>
@@ -455,7 +458,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                   onClick={handlePayment}
                   disabled={isProcessing || !departure}
                   size="lg"
-                  className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 text-lg py-6"
+                  className="w-full rounded-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 text-lg py-6"
                 >
                   {isProcessing ? (
                     <>

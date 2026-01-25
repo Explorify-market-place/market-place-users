@@ -6,9 +6,7 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Users,
   Shield,
-  Star,
   ArrowLeft,
   AlertCircle,
   ChevronLeft,
@@ -161,9 +159,9 @@ export default function TripDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       {/* Floating Orbs */}
       <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
@@ -333,7 +331,7 @@ export default function TripDetailPage() {
               {((plan.included && plan.included.length > 0) ||
                 (plan.excluded && plan.excluded.length > 0)) && (
                 <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6">
-                  <h2 className="text-2xl font-bold mb-4">What's Included</h2>
+                  <h2 className="text-2xl font-bold mb-4">What&apos;s Included</h2>
                   <div className="grid md:grid-cols-2 gap-6">
                     {plan.included && plan.included.length > 0 && (
                       <div>
@@ -526,7 +524,7 @@ export default function TripDetailPage() {
                 <div className="text-sm text-muted-foreground mb-1">
                   Price per person
                 </div>
-                <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   ₹{plan.price.toLocaleString()}
                 </div>
               </div>
