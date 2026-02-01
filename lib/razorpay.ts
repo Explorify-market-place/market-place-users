@@ -2,9 +2,6 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import type { RazorpayOrder, RazorpayRefundData, RazorpayError } from "@/types/razorpay";
 
-// Re-export for consumers
-export type { RazorpayOrder } from "@/types/razorpay"; // TODO: TO UNDERSTAND
-
 /*
  *Initialize Razorpay instance
  */
