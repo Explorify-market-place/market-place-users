@@ -1,6 +1,21 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
+// Type definitions for Razorpay
+export interface RazorpayOrder {
+  id: string;
+  entity: string;
+  amount: number;
+  amount_paid: number;
+  amount_due: number;
+  currency: string;
+  receipt: string;
+  status: string;
+  attempts: number;
+  notes: Record<string, string>;
+  created_at: number;
+}
+
 /*
  *Initialize Razorpay instance
  */
@@ -28,14 +43,20 @@ export function verifyPaymentSignature(
 
 /*
  * Create a Razorpay payment order
+ * 
+ * Based on Razorpay API docs: https://razorpay.com/docs/api/orders/
+ * - amount: Amount in paise (multiply by 100)
+ * - currency: 3-letter ISO code (INR, USD, etc.)
+ * - receipt: Unique receipt ID for your reference
+ * - notes: Key-value pairs for additional info (max 15 keys, 256 chars each)
  */
 export async function createPaymentOrder(
   amount: number,
   currency: string = "INR",
   receipt?: string,
   notes?: Record<string, string>
-) {
-  const options = {
+): Promise<RazorpayOrder> {
+  const options: Parameters<typeof razorpay.orders.create>[0] = {
     amount: amount * 100, // Razorpay expects amount in paise (smallest currency unit)
     currency,
     receipt: receipt || `receipt_${Date.now()}`,
@@ -43,8 +64,11 @@ export async function createPaymentOrder(
   };
 
   try {
+    // Razorpay handles idempotency implicitly based on receipt + amount + currency
+    console.log("Creating Razorpay order:", { amount, currency, receipt });
+    
     const order = await razorpay.orders.create(options);
-    return order;
+    return order as unknown as RazorpayOrder;
   } catch (error) {
     console.error("Error creating Razorpay order:", error);
     throw error;

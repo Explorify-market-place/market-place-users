@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Calculate refund amount (percentage of tripCost only, platform fee is non-refundable)
+      // Calculate refund amount (percentage of tripCost)
       const tripCostRefund = Math.round(
         (booking.tripCost * refundPercentage) / 100
       );

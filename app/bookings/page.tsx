@@ -4,7 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Clock, Package } from "lucide-react";
-import { getBookingsByUser, getPlanById, getDepartureById } from "@/lib/db-helpers";
+import {
+  getBookingsByUser,
+  getPlanById,
+  getDepartureById,
+} from "@/lib/db-helpers";
 
 export default async function BookingsPage() {
   const session = await auth();
@@ -20,18 +24,18 @@ export default async function BookingsPage() {
   const bookingsWithDetails = await Promise.all(
     bookings.map(async (booking) => {
       const plan = await getPlanById(booking.planId);
-      const departure = booking.departureId 
+      const departure = booking.departureId
         ? await getDepartureById(booking.departureId)
         : null;
-      
+
       return {
         ...booking,
         tripTitle: plan?.name || "Unknown Trip",
-        location: plan?.stops?.map(s => s.name).join(" → ") || "Unknown",
+        location: plan?.stops?.map((s) => s.name).join(" → ") || "Unknown",
         tripImage: plan?.images?.[0] || "/placeholder-trip.jpg",
         departure,
       };
-    })
+    }),
   );
 
   return (
@@ -108,9 +112,7 @@ export default async function BookingsPage() {
                             <Calendar className="w-4 h-4" />
                             <span>
                               Travel Date:{" "}
-                              {new Date(
-                                booking.tripDate
-                              ).toLocaleDateString()}
+                              {new Date(booking.tripDate).toLocaleDateString()}
                             </span>
                           </div>
                           {booking.departure && (
@@ -123,9 +125,7 @@ export default async function BookingsPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4" />
-                                <span>
-                                  {booking.departure.pickupLocation}
-                                </span>
+                                <span>{booking.departure.pickupLocation}</span>
                               </div>
                             </>
                           )}
@@ -147,20 +147,39 @@ export default async function BookingsPage() {
                         {/* Booking Status Badge */}
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                            (booking.bookingStatus || "confirmed") ===
-                            "confirmed"
+                            booking.bookingStatus === "confirmed"
                               ? "bg-green-500/10 text-green-600 border border-green-500/20"
-                              : (booking.bookingStatus || "confirmed") ===
-                                "cancelled"
-                              ? "bg-red-500/10 text-red-600 border border-red-500/20"
-                              : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                              : booking.bookingStatus === "cancelled"
+                                ? "bg-red-500/10 text-red-600 border border-red-500/20"
+                                : booking.bookingStatus === "pending"
+                                  ? "bg-yellow-500/10 text-yellow-600 border border-yellow-500/20"
+                                  : booking.bookingStatus === "failed"
+                                    ? "bg-orange-500/10 text-orange-600 border border-orange-500/20"
+                                    : booking.bookingStatus === "completed"
+                                      ? "bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                                      : "bg-gray-500/10 text-gray-600 border border-gray-500/20"
                           }`}
                         >
-                          {(booking.bookingStatus || "confirmed")
-                            .charAt(0)
-                            .toUpperCase() +
-                            (booking.bookingStatus || "confirmed").slice(1)}
+                          {booking.bookingStatus.charAt(0).toUpperCase() +
+                            booking.bookingStatus.slice(1)}
                         </span>
+
+                        {/* Payment Status Badge for pending/failed bookings */}
+                        {(booking.bookingStatus === "pending" ||
+                          booking.bookingStatus === "failed") && (
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                              booking.paymentStatus === "completed"
+                                ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                                : booking.paymentStatus === "failed"
+                                  ? "bg-red-500/10 text-red-600 border border-red-500/20"
+                                  : "bg-gray-500/10 text-gray-600 border border-gray-500/20"
+                            }`}
+                          >
+                            Payment: {booking.paymentStatus}
+                          </span>
+                        )}
+
                         {/* Refund Badge if applicable */}
                         {booking.refundStatus === "completed" && (
                           <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-600 border border-orange-500/20">

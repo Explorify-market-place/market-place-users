@@ -8,15 +8,20 @@ import {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ bookingId: string }> }
+  { params }: { params: Promise<{ bookingId: string }> } // params is a Promise 
 ) {
   try {
+    // first, authenticate user
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // get bookingId from params
     const { bookingId } = await params;
+    const body = await request.json();
+    const { reason } = body;
+    
     const booking = await getBookingById(bookingId);
 
     if (!booking) {
@@ -36,6 +41,33 @@ export async function POST(
       );
     }
 
+    // SIMPLE CANCELLATION: If booking is pending (no payment made yet)
+    // This happens when user dismisses Razorpay modal
+    if (booking.bookingStatus === "pending") {
+      await updateBooking(bookingId, {
+        bookingStatus: "cancelled",
+        cancelledAt: new Date().toISOString(),
+        cancellationReason: reason || "Payment cancelled by user",
+      });
+
+      // Release seats back to departure
+      try {
+        await decrementBookedSeats(booking.departureId, booking.numPeople);
+        console.log(`Released ${booking.numPeople} seats for pending booking ${bookingId}`);
+      } catch (error) {
+        console.error(`Failed to release seats for booking ${bookingId}:`, error);
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Booking cancelled successfully",
+        },
+        { status: 200 }
+      );
+    }
+
+    // COMPLEX CANCELLATION WITH REFUND: Booking is confirmed (payment completed)
     // Check if vendor payout already completed
     if (booking.vendorPayoutStatus === "completed") {
       return NextResponse.json(
@@ -156,7 +188,7 @@ export async function POST(
       refundData = JSON.parse(responseText);
     } catch (parseError) {
       // Handle malformed JSON
-      console.error("Failed to parse refund response as JSON");
+      console.error("Failed to parse refund response as JSON :", parseError);
       console.error("Raw refund response:", responseText.substring(0, 1000));
 
       // Keep booking cancelled since seats already freed, but mark refund as rejected

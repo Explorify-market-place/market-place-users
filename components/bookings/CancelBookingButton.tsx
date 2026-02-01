@@ -114,9 +114,6 @@ export function CancelBookingButton({
                   {refundMessage}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  * Platform fee is non-refundable
-                </p>
-                <p className="text-xs text-muted-foreground">
                   * Refund will be processed within 5-7 business days
                 </p>
               </div>
