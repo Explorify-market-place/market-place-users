@@ -18,7 +18,7 @@ export default async function TripsPage() {
       <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
 
-      <div className="relative z-10 container mx-auto px-4 py-12">
+      <div className="relative z-10 container mx-auto px-4 py-12 pt-50">
         {/* Header */}
         <div className="max-w-4xl mx-auto mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
