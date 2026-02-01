@@ -4,6 +4,7 @@ import { processRefund } from "@/lib/razorpay";
 import { getBookingById } from "@/lib/db-helpers";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamoDb, BOOKINGS_TABLE } from "@/lib/dynamodb";
+import type { ExpressionAttributeValues } from "@/types/dynamodb-utils";
 
 export async function POST(request: NextRequest) {
   // Wrap everything in try-catch to ensure we always return JSON
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
     // Verify user owns this booking or is admin (for user cancellations)
     if (
       !vendorCancellation &&
+      session &&
       booking.userId !== session.user.id &&
       session.user.role !== "admin"
     ) {
@@ -292,7 +294,7 @@ async function updateBookingRefundStatus(
   vendorPayoutAmount?: number
 ) {
   const updateExpression: string[] = ["refundStatus = :refundStatus"];
-  const expressionAttributeValues: any = {
+  const expressionAttributeValues: ExpressionAttributeValues = {
     ":refundStatus": refundStatus,
   };
 

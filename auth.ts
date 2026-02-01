@@ -57,7 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     //sign up logic is implemented separately in app/api/auth/signup/route.ts
 
-    async signIn({ user, account }: any) {
+    async signIn({ user, account }) {
       if (!user?.email) return false;
 
       // Only create user for OAuth providers (Google)
@@ -82,9 +82,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return true;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       if (session.user && token.email) {
-        const dbUser = await getUserByEmail(token.email);
+        const dbUser = await getUserByEmail(token.email as string);
         if (dbUser) {
           session.user.id = dbUser.userId;
           session.user.role = dbUser.role;
@@ -92,10 +92,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }) {
       if (user?.email) token.email = user.email;
       if (token.email) {
-        const dbUser = await getUserByEmail(token.email);
+        const dbUser = await getUserByEmail(token.email as string);
         if (dbUser) {
           // enrich token for middleware
           token.role = dbUser.role;

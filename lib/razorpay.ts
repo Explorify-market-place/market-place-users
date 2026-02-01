@@ -1,20 +1,9 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import type { RazorpayOrder, RazorpayRefundData, RazorpayError } from "@/types/razorpay";
 
-// Type definitions for Razorpay
-export interface RazorpayOrder {
-  id: string;
-  entity: string;
-  amount: number;
-  amount_paid: number;
-  amount_due: number;
-  currency: string;
-  receipt: string;
-  status: string;
-  attempts: number;
-  notes: Record<string, string>;
-  created_at: number;
-}
+// Re-export for consumers
+export type { RazorpayOrder } from "@/types/razorpay"; // TODO: TO UNDERSTAND
 
 /*
  *Initialize Razorpay instance
@@ -68,7 +57,7 @@ export async function createPaymentOrder(
     console.log("Creating Razorpay order:", { amount, currency, receipt });
     
     const order = await razorpay.orders.create(options);
-    return order as unknown as RazorpayOrder;
+    return order as unknown as RazorpayOrder; // TODO: TO UNDERSTAND
   } catch (error) {
     console.error("Error creating Razorpay order:", error);
     throw error;
@@ -104,17 +93,18 @@ export async function processRefund(
     const refundAmount = Math.round(amount * 100);
 
     // Razorpay requires amount in paise and notes as string key-value pairs only
-    const refundData: any = {
+    const refundData: RazorpayRefundData = {
       amount: refundAmount, // Amount in paise
       speed: "normal", // Can be 'normal' or 'optimum'
     };
 
     // Validate refund amount doesn't exceed payment amount
-    if (refundData.amount > payment.amount) {
+    const paymentAmount = typeof payment.amount === 'string' ? parseInt(payment.amount, 10) : payment.amount;
+    if (refundData.amount > paymentAmount) {
       console.warn(
-        `Refund amount (${refundData.amount}) exceeds payment amount (${payment.amount}). Adjusting to payment amount.`
+        `Refund amount (${refundData.amount}) exceeds payment amount (${paymentAmount}). Adjusting to payment amount.`
       );
-      refundData.amount = payment.amount;
+      refundData.amount = paymentAmount;
     }
 
     // Only add notes if provided and ensure all values are strings
@@ -143,26 +133,26 @@ export async function processRefund(
       amount: refund.amount,
     });
     return refund;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Extract the actual error message from Razorpay
+    const razorpayError = error as RazorpayError;
     const errorMessage =
-      error.error?.description ||
-      error.description ||
-      error.message ||
+      razorpayError.error?.description ||
+      razorpayError.message ||
       "Unknown error";
 
     console.error("Error processing refund:", {
       message: errorMessage,
-      error: error.error || error,
-      statusCode: error.statusCode,
+      error: razorpayError.error || razorpayError,
+      statusCode: razorpayError.statusCode,
     });
 
     // Throw a more descriptive error
-    const enhancedError: any = new Error(
+    const enhancedError: RazorpayError = new Error(
       `Razorpay refund failed: ${errorMessage}`
-    );
-    enhancedError.razorpayError = error.error || error;
-    enhancedError.statusCode = error.statusCode;
+    ) as RazorpayError;
+    enhancedError.error = razorpayError.error;
+    enhancedError.statusCode = razorpayError.statusCode;
     throw enhancedError;
   }
 }

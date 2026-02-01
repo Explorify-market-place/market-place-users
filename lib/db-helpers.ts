@@ -9,6 +9,10 @@ import {
   DynamoDBBooking,
   DynamoDBDeparture,
 } from "./dynamodb";
+import type {
+  ExpressionAttributeValues,
+  ExpressionAttributeNames,
+} from "@/types/dynamodb-utils";
 import {
   GetCommand,
   PutCommand,
@@ -17,6 +21,13 @@ import {
   ScanCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
+
+// TODO: Consider adding pagination for scan/query operations returning large datasets
+
+// TODO: make a common library for helpers for both repositories 
+// Shared types package? — Both repos have identical DynamoDB types. 
+// Consider extracting to a shared npm package (@explorify/types) if you plan to add more services. 
+// For now, keeping them in sync manually is fine.
 
 // ============ USER OPERATIONS ============
 
@@ -71,8 +82,8 @@ export async function updateUser(
   updates: Partial<DynamoDBUser>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
-  const expressionAttributeValues: any = {};
-  const expressionAttributeNames: any = {};
+  const expressionAttributeValues: ExpressionAttributeValues = {};
+  const expressionAttributeNames: ExpressionAttributeNames = {};
 
   Object.entries(updates).forEach(([key, value], index) => {
     if (key !== "userId") {
@@ -186,8 +197,8 @@ export async function updatePlan(
   updates: Partial<DynamoDBPlan>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
-  const expressionAttributeValues: any = {};
-  const expressionAttributeNames: any = {};
+  const expressionAttributeValues: ExpressionAttributeValues = {};
+  const expressionAttributeNames: ExpressionAttributeNames = {};
 
   Object.entries(updates).forEach(([key, value], index) => {
     if (key !== "planId") {
@@ -328,8 +339,8 @@ export async function updateBooking(
   updates: Partial<DynamoDBBooking>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
-  const expressionAttributeValues: any = {};
-  const expressionAttributeNames: any = {};
+  const expressionAttributeValues: ExpressionAttributeValues = {};
+  const expressionAttributeNames: ExpressionAttributeNames = {};
 
   Object.entries(updates).forEach(([key, value], index) => {
     if (key !== "bookingId") {
@@ -407,8 +418,8 @@ export async function updateDeparture(
   updates: Partial<DynamoDBDeparture>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
-  const expressionAttributeValues: any = {};
-  const expressionAttributeNames: any = {};
+  const expressionAttributeValues: ExpressionAttributeValues = {};
+  const expressionAttributeNames: ExpressionAttributeNames = {};
 
   Object.entries(updates).forEach(([key, value], index) => {
     if (key !== "departureId") {
@@ -488,8 +499,8 @@ export async function updateBookedSeats(
     const result = await dynamoDb.send(command);
     console.log(`Updated bookedSeats by ${delta}:`, result.Attributes?.bookedSeats);
     return true;
-  } catch (error: any) {
-    if (error.name === "ConditionalCheckFailedException") {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "ConditionalCheckFailedException") {
       console.log(
         `Seat update rejected: delta=${delta} would violate constraints (capacity or negative seats)`,
       );

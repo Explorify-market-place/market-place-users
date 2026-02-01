@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getBookingByPaymentId, updateBooking, incrementBookedSeats } from "@/lib/db-helpers";
+import type { RazorpayWebhookPayload } from "@/types/razorpay";
 
 /*
  * RazorPay webhook handler
@@ -68,9 +69,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handlePaymentCaptured(payload: any) {
+async function handlePaymentCaptured(payload: RazorpayWebhookPayload) {
   try {
-    const payment = payload.payment.entity;
+    const payment = payload.payment?.entity;
+    if (!payment) return;
+    
     const paymentId = payment.id;
     const orderId = payment.order_id;
     const amount = payment.amount / 100; // Convert paise to rupees
@@ -101,9 +104,11 @@ async function handlePaymentCaptured(payload: any) {
   }
 }
 
-async function handlePaymentFailed(payload: any) {
+async function handlePaymentFailed(payload: RazorpayWebhookPayload) {
   try {
-    const payment = payload.payment.entity;
+    const payment = payload.payment?.entity;
+    if (!payment) return;
+    
     const paymentId = payment.id;
     const orderId = payment.order_id;
     const errorCode = payment.error_code;
@@ -144,9 +149,11 @@ async function handlePaymentFailed(payload: any) {
   }
 }
 
-async function handleRefundCreated(payload: any) {
+async function handleRefundCreated(payload: RazorpayWebhookPayload) {
   try {
-    const refund = payload.refund.entity;
+    const refund = payload.refund?.entity;
+    if (!refund) return;
+    
     const paymentId = refund.payment_id;
     const refundId = refund.id;
     const amount = refund.amount / 100; // Convert paise to rupees
@@ -175,9 +182,11 @@ async function handleRefundCreated(payload: any) {
   }
 }
 
-async function handleRefundProcessed(payload: any) {
+async function handleRefundProcessed(payload: RazorpayWebhookPayload) {
   try {
-    const refund = payload.refund.entity;
+    const refund = payload.refund?.entity;
+    if (!refund) return;
+    
     const paymentId = refund.payment_id;
     const refundId = refund.id;
     const amount = refund.amount / 100;
@@ -206,9 +215,11 @@ async function handleRefundProcessed(payload: any) {
   }
 }
 
-async function handleRefundFailed(payload: any) {
+async function handleRefundFailed(payload: RazorpayWebhookPayload) {
   try {
-    const refund = payload.refund.entity;
+    const refund = payload.refund?.entity;
+    if (!refund) return;
+    
     const paymentId = refund.payment_id;
     const refundId = refund.id;
     const amount = refund.amount / 100;
