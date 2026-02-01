@@ -22,8 +22,7 @@ export const dynamoDb = DynamoDBDocumentClient.from(client, {
 export const PLANS_TABLE = process.env.DYNAMODB_PLANS_TABLE || "TravelPlans";
 export const USERS_TABLE = process.env.DYNAMODB_USERS_TABLE || "Users";
 export const BOOKINGS_TABLE = process.env.DYNAMODB_BOOKINGS_TABLE || "Bookings";
-export const DEPARTURES_TABLE =
-  process.env.DYNAMODB_DEPARTURES_TABLE || "Departures";
+export const DEPARTURES_TABLE = process.env.DYNAMODB_DEPARTURES_TABLE || "Departures";
 
 // Type definitions for DynamoDB items
 export interface DynamoDBUser {
@@ -137,10 +136,10 @@ export interface DynamoDBBooking {
   tripDate: string; // Keep for refund logic and future payout lambda
   numPeople: number;
   paymentStatus: "pending" | "completed" | "failed";
-  bookingStatus?: "confirmed" | "cancelled" | "completed"; // Trip status
+  bookingStatus: "pending" | "confirmed" | "cancelled" | "completed" | "failed"; // Required, trip lifecycle status
   tripCost: number; // Base trip cost (plan.price × numPeople)
-  platformFee: number; // 2% fee on tripCost, paid by user
-  totalAmount: number; // tripCost + platformFee (total paid by user)
+  platformFee: number; // Legacy field - always 0, no extra fee charged to user
+  totalAmount: number; // Same as tripCost (user pays exactly trip cost)
   createdAt: string;
 
   // Razorpay payment fields
@@ -159,7 +158,7 @@ export interface DynamoDBBooking {
 
   // Vendor payout tracking
   vendorPayoutStatus: "pending" | "processing" | "completed" | "failed";
-  vendorPayoutAmount?: number; // Amount to transfer to vendor (85% of trip cost)
+  vendorPayoutAmount?: number; // Amount to transfer to vendor (plan.vendorCut % or default 85%)
   vendorPayoutDate?: string;
-  platformCut?: number; // Platform revenue from trip cost (15% default)
+  platformCut?: number; // Platform revenue (100 - vendorCut, default 15%)
 }

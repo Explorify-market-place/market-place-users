@@ -21,7 +21,7 @@ import {
 // ============ USER OPERATIONS ============
 
 export async function getUserByEmail(
-  email: string
+  email: string,
 ): Promise<DynamoDBUser | null> {
   try {
     const command = new ScanCommand({
@@ -42,7 +42,7 @@ export async function getUserByEmail(
 }
 
 export async function getUserById(
-  userId: string
+  userId: string,
 ): Promise<DynamoDBUser | null> {
   try {
     const command = new GetCommand({
@@ -68,7 +68,7 @@ export async function createUser(user: DynamoDBUser): Promise<DynamoDBUser> {
 
 export async function updateUser(
   userId: string,
-  updates: Partial<DynamoDBUser>
+  updates: Partial<DynamoDBUser>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
   const expressionAttributeValues: any = {};
@@ -121,7 +121,7 @@ export async function getPendingVendors(): Promise<DynamoDBUser[]> {
 // ============ PLAN OPERATIONS ============
 
 export async function getPlanById(
-  planId: string
+  planId: string,
 ): Promise<DynamoDBPlan | null> {
   try {
     const command = new GetCommand({
@@ -154,7 +154,7 @@ export async function getAllActivePlans(): Promise<DynamoDBPlan[]> {
 }
 
 export async function getPlansByVendor(
-  vendorId: string
+  vendorId: string,
 ): Promise<DynamoDBPlan[]> {
   try {
     const command = new ScanCommand({
@@ -183,7 +183,7 @@ export async function createPlan(plan: DynamoDBPlan): Promise<DynamoDBPlan> {
 
 export async function updatePlan(
   planId: string,
-  updates: Partial<DynamoDBPlan>
+  updates: Partial<DynamoDBPlan>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
   const expressionAttributeValues: any = {};
@@ -223,7 +223,7 @@ export async function deletePlan(planId: string): Promise<void> {
 // ============ BOOKING OPERATIONS ============
 
 export async function createBooking(
-  booking: DynamoDBBooking
+  booking: DynamoDBBooking,
 ): Promise<DynamoDBBooking> {
   const command = new PutCommand({
     TableName: BOOKINGS_TABLE,
@@ -234,7 +234,7 @@ export async function createBooking(
 }
 
 export async function getBookingsByUser(
-  userId: string
+  userId: string,
 ): Promise<DynamoDBBooking[]> {
   try {
     const command = new ScanCommand({
@@ -253,7 +253,7 @@ export async function getBookingsByUser(
 }
 
 export async function getBookingById(
-  bookingId: string
+  bookingId: string,
 ): Promise<DynamoDBBooking | null> {
   try {
     const command = new GetCommand({
@@ -269,7 +269,7 @@ export async function getBookingById(
 }
 
 export async function getBookingByPaymentId(
-  razorpayPaymentId: string
+  razorpayPaymentId: string,
 ): Promise<DynamoDBBooking | null> {
   try {
     const command = new ScanCommand({
@@ -291,7 +291,7 @@ export async function getBookingByPaymentId(
 
 export async function updateBookingStatus(
   bookingId: string,
-  paymentStatus: "pending" | "completed" | "failed"
+  paymentStatus: "pending" | "completed" | "failed",
 ): Promise<void> {
   const command = new UpdateCommand({
     TableName: BOOKINGS_TABLE,
@@ -305,7 +305,7 @@ export async function updateBookingStatus(
 }
 
 export async function getBookingsByPlan(
-  planId: string
+  planId: string,
 ): Promise<DynamoDBBooking[]> {
   try {
     const command = new ScanCommand({
@@ -325,7 +325,7 @@ export async function getBookingsByPlan(
 
 export async function updateBooking(
   bookingId: string,
-  updates: Partial<DynamoDBBooking>
+  updates: Partial<DynamoDBBooking>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
   const expressionAttributeValues: any = {};
@@ -357,7 +357,7 @@ export async function updateBooking(
 // ============ DEPARTURE OPERATIONS ============
 
 export async function createDeparture(
-  departure: DynamoDBDeparture
+  departure: DynamoDBDeparture,
 ): Promise<DynamoDBDeparture> {
   const command = new PutCommand({
     TableName: DEPARTURES_TABLE,
@@ -368,7 +368,7 @@ export async function createDeparture(
 }
 
 export async function getDepartureById(
-  departureId: string
+  departureId: string,
 ): Promise<DynamoDBDeparture | null> {
   try {
     const command = new GetCommand({
@@ -384,7 +384,7 @@ export async function getDepartureById(
 }
 
 export async function getDeparturesByPlan(
-  planId: string
+  planId: string,
 ): Promise<DynamoDBDeparture[]> {
   try {
     const command = new ScanCommand({
@@ -404,7 +404,7 @@ export async function getDeparturesByPlan(
 
 export async function updateDeparture(
   departureId: string,
-  updates: Partial<DynamoDBDeparture>
+  updates: Partial<DynamoDBDeparture>,
 ): Promise<void> {
   const updateExpressions: string[] = [];
   const expressionAttributeValues: any = {};
@@ -441,73 +441,79 @@ export async function deleteDeparture(departureId: string): Promise<void> {
   await dynamoDb.send(command);
 }
 
-export async function incrementBookedSeats(
+/**
+ * Atomically update booked seats for a departure.
+ * 
+ * HOW DYNAMODB MAKES THIS ATOMIC:
+ * DynamoDB uses optimistic locking via ConditionExpression. The update will only
+ * succeed if the condition is met at the exact moment of the write. If two requests
+ * try to update simultaneously, only ONE will succeed - the other gets
+ * ConditionalCheckFailedException and must retry.
+ * 
+ * This prevents race conditions like:
+ * - Two users trying to book the last seat simultaneously
+ * - Overbooking beyond capacity
+ * - Releasing more seats than were booked
+ * 
+ * @param departureId - The departure to update
+ * @param delta - Positive to reserve seats, negative to release seats
+ * @returns true if successful, false if constraints violated (capacity exceeded or negative seats)
+ */
+export async function updateBookedSeats(
   departureId: string,
-  numPeople: number
+  delta: number,
 ): Promise<boolean> {
   try {
-    // First, get the current departure to check capacity
-    const getDeparture = await getDepartureById(departureId);
-    if (!getDeparture) {
-      console.error("Departure not found");
-      return false;
-    }
-
-    const newBookedSeats = getDeparture.bookedSeats + numPeople;
-    if (newBookedSeats > getDeparture.totalCapacity) {
-      console.log("Capacity exceeded - cannot book");
-      return false;
-    }
-
-    // Now update atomically with condition to prevent race conditions
+    // DynamoDB atomic update with conditional check
+    // This is a single atomic operation - no read-then-write race condition
     const command = new UpdateCommand({
       TableName: DEPARTURES_TABLE,
       Key: { departureId },
-      UpdateExpression:
-        "SET bookedSeats = :newBookedSeats, updatedAt = :updatedAt",
-      ConditionExpression:
-        "bookedSeats = :currentBookedSeats AND :newBookedSeats <= totalCapacity",
+      // ADD is atomic - it reads current value and adds delta in one operation
+      UpdateExpression: "SET bookedSeats = bookedSeats + :delta, updatedAt = :updatedAt",
+      // Condition ensures we never go negative or exceed capacity
+      ConditionExpression: 
+        "attribute_exists(departureId) AND " +
+        "bookedSeats + :delta >= :zero AND " +
+        "bookedSeats + :delta <= totalCapacity",
       ExpressionAttributeValues: {
-        ":newBookedSeats": newBookedSeats,
-        ":currentBookedSeats": getDeparture.bookedSeats,
+        ":delta": delta,
+        ":zero": 0,
         ":updatedAt": new Date().toISOString(),
       },
+      // Return the new value for logging
+      ReturnValues: "UPDATED_NEW",
     });
-    await dynamoDb.send(command);
+    
+    const result = await dynamoDb.send(command);
+    console.log(`Updated bookedSeats by ${delta}:`, result.Attributes?.bookedSeats);
     return true;
   } catch (error: any) {
     if (error.name === "ConditionalCheckFailedException") {
       console.log(
-        "Capacity exceeded or concurrent update detected - cannot book"
+        `Seat update rejected: delta=${delta} would violate constraints (capacity or negative seats)`,
       );
       return false;
     }
-    console.error("Error incrementing booked seats:", error);
+    console.error("Error updating booked seats:", error);
     throw error;
   }
 }
 
+// Legacy functions - kept for backward compatibility, delegate to updateBookedSeats
+export async function incrementBookedSeats(
+  departureId: string,
+  numPeople: number,
+): Promise<boolean> {
+  return updateBookedSeats(departureId, numPeople);
+}
+
 export async function decrementBookedSeats(
   departureId: string,
-  numPeople: number
+  numPeople: number,
 ): Promise<void> {
-  try {
-    const command = new UpdateCommand({
-      TableName: DEPARTURES_TABLE,
-      Key: { departureId },
-      UpdateExpression:
-        "SET bookedSeats = if_not_exists(bookedSeats, :zero) - :numPeople, updatedAt = :updatedAt",
-      ConditionExpression:
-        "attribute_exists(departureId) AND bookedSeats >= :numPeople",
-      ExpressionAttributeValues: {
-        ":numPeople": numPeople,
-        ":zero": 0,
-        ":updatedAt": new Date().toISOString(),
-      },
-    });
-    await dynamoDb.send(command);
-  } catch (error) {
-    console.error("Error decrementing booked seats:", error);
-    throw error;
+  const success = await updateBookedSeats(departureId, -numPeople);
+  if (!success) {
+    throw new Error(`Failed to release ${numPeople} seats - would result in negative count`);
   }
 }

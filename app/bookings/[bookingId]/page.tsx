@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import Image from "next/image";
 import {
   getBookingById,
   getPlanById,
@@ -11,7 +12,6 @@ import {
   MapPin,
   Users,
   CreditCard,
-  ArrowLeft,
   Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,15 +23,24 @@ export default async function BookingSuccessPage({
   searchParams,
 }: {
   params: Promise<{ bookingId: string }>;
-  searchParams: Promise<{ success?: string }>;
+  searchParams: Promise<{ success?: string; processing?: string }>;
 }) {
+  // first, authenticate user
   const session = await auth();
   if (!session?.user) {
     redirect("/auth/sign-in");
   }
 
   const { bookingId } = await params;
-  const { success } = await searchParams;
+  // Query params from booking flow - currently used for logging/analytics
+  // Could be used to show specific messages or trigger confetti animations
+  const { success: _success, processing: _processing } = await searchParams;
+  void _success; // Silence unused warning - available for future use
+  void _processing; // Silence unused warning - available for future use
+  
+  // Note: success and processing indicate:
+  // success=true: Payment verified successfully via verify route
+  // processing=true: Payment made but verification pending (webhook will confirm)
 
   const booking = await getBookingById(bookingId);
 
@@ -45,9 +54,9 @@ export default async function BookingSuccessPage({
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       {/* Floating Orbs */}
       <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
@@ -61,17 +70,27 @@ export default async function BookingSuccessPage({
             <div
               className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center animate-scale-in ${
                 booking.bookingStatus === "cancelled"
-                  ? "bg-gradient-to-br from-red-500 to-rose-600"
-                  : "bg-gradient-to-br from-green-500 to-emerald-600"
+                  ? "bg-linear-to-br from-red-500 to-rose-600"
+                  : booking.bookingStatus === "pending"
+                  ? "bg-linear-to-br from-yellow-500 to-amber-600"
+                  : booking.bookingStatus === "failed"
+                  ? "bg-linear-to-br from-orange-500 to-red-600"
+                  : "bg-linear-to-br from-green-500 to-emerald-600"
               }`}
             >
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
 
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {booking.bookingStatus === "cancelled"
                   ? "Booking Cancelled"
+                  : booking.bookingStatus === "pending"
+                  ? "Payment Pending"
+                  : booking.bookingStatus === "failed"
+                  ? "Payment Failed"
+                  : booking.bookingStatus === "completed"
+                  ? "Trip Completed"
                   : "Booking Confirmed!"}
               </span>
             </h1>
@@ -80,8 +99,12 @@ export default async function BookingSuccessPage({
                 ? booking.refundStatus === "completed"
                   ? `Refund processed: ₹${booking.refundAmount?.toLocaleString()}`
                   : booking.refundStatus === "processing"
-                  ? "Refund in progress"
-                  : "Payment will be refunded"
+                    ? "Refund in progress"
+                    : "Payment will be refunded"
+                : booking.bookingStatus === "pending"
+                ? "Your payment is being processed. Please complete the payment to confirm your booking."
+                : booking.bookingStatus === "failed"
+                ? "Your payment could not be completed. You can try booking again."
                 : "Your payment was successful"}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -96,20 +119,22 @@ export default async function BookingSuccessPage({
             {plan && (
               <div className="space-y-4">
                 <div className="flex items-start gap-4 pb-4 border-b border-border/30">
-                  {plan.image && (
-                    <img
-                      src={plan.image}
+                  {plan.images?.[0] && (
+                    <Image
+                      src={plan.images[0]}
                       alt={plan.name}
+                      width={96}
+                      height={96}
                       className="w-24 h-24 rounded-lg object-cover"
                     />
                   )}
                   <div>
                     <h3 className="font-bold text-xl mb-1">{plan.name}</h3>
-                    {plan.route && plan.route.length > 0 && (
+                    {plan.stops && plan.stops.length > 0 && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="w-4 h-4" />
                         <span className="text-sm">
-                          {plan.route.join(" → ")}
+                          {plan.stops.map((s) => s.name).join(" → ")}
                         </span>
                       </div>
                     )}
@@ -170,7 +195,7 @@ export default async function BookingSuccessPage({
                             day: "numeric",
                             month: "long",
                             year: "numeric",
-                          }
+                          },
                         )}
                       </div>
                     </div>
@@ -222,7 +247,7 @@ export default async function BookingSuccessPage({
                     <span className="text-muted-foreground">
                       Trip Cost ({booking.numPeople} × ₹
                       {Math.round(
-                        (booking.tripCost || 0) / booking.numPeople
+                        (booking.tripCost || 0) / booking.numPeople,
                       ).toLocaleString()}
                       )
                     </span>
@@ -230,18 +255,10 @@ export default async function BookingSuccessPage({
                       ₹{(booking.tripCost || 0).toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">
-                      Platform Fee (2%)
-                    </span>
-                    <span className="font-semibold">
-                      ₹{(booking.platformFee || 0).toLocaleString()}
-                    </span>
-                  </div>
                   <div className="pt-3 border-t border-border/30">
                     <div className="flex justify-between items-center text-lg">
                       <span className="font-semibold">Total Amount Paid</span>
-                      <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <span className="text-3xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         ₹{booking.totalAmount.toLocaleString()}
                       </span>
                     </div>
@@ -307,19 +324,19 @@ export default async function BookingSuccessPage({
                         booking.refundStatus === "completed"
                           ? "bg-green-500/20 text-green-600 dark:text-green-400"
                           : booking.refundStatus === "processing"
-                          ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-                          : booking.refundStatus === "rejected"
-                          ? "bg-red-500/20 text-red-600 dark:text-red-400"
-                          : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                            ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                            : booking.refundStatus === "rejected"
+                              ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                              : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
                       }`}
                     >
                       {booking.refundStatus === "completed"
                         ? "Completed"
                         : booking.refundStatus === "processing"
-                        ? "Processing"
-                        : booking.refundStatus === "rejected"
-                        ? "Rejected"
-                        : "Pending"}
+                          ? "Processing"
+                          : booking.refundStatus === "rejected"
+                            ? "Rejected"
+                            : "Pending"}
                     </span>
                   </div>
 
@@ -362,6 +379,31 @@ export default async function BookingSuccessPage({
 
           {/* Actions */}
           <div className="space-y-4">
+            {/* Show retry/book again button for failed bookings */}
+            {booking.bookingStatus === "failed" && plan && (
+              <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg mb-4">
+                <p className="text-sm text-orange-600 dark:text-orange-400 mb-3">
+                  ⚠️ Your payment failed. The reserved seats have been released. You can try booking again.
+                </p>
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full rounded-full bg-linear-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                >
+                  <Link href={`/trips/${plan.planId}`}>Book Again</Link>
+                </Button>
+              </div>
+            )}
+
+            {/* Show info for pending bookings */}
+            {booking.bookingStatus === "pending" && (
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg mb-4">
+                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                  💡 Your payment is pending. Please complete the payment to confirm your booking. Seats are temporarily reserved for you.
+                </p>
+              </div>
+            )}
+
             {/* Cancel Button (shows only if eligible) */}
             <CancelBookingButton
               bookingId={booking.bookingId}
@@ -374,7 +416,7 @@ export default async function BookingSuccessPage({
               <Button
                 asChild
                 size="lg"
-                className="flex-1 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="flex-1 rounded-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <Link href="/bookings">View All Bookings</Link>
               </Button>

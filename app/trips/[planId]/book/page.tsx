@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -18,7 +19,7 @@ import Link from "next/link";
 import { DynamoDBPlan, DynamoDBDeparture } from "@/lib/dynamodb";
 
 interface BookingPageProps {
-  params: Promise<{ planId: string }>;
+  params: Promise<{ planId: string }>; // params is a Promise
 }
 
 interface DepartureWithAvailability extends DynamoDBDeparture {
@@ -39,9 +40,6 @@ export default function BookingPage({ params }: BookingPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
-
-  // Platform fee percentage
-  const PLATFORM_FEE_PERCENT = 2;
 
   useEffect(() => {
     params.then(({ planId: id }) => {
@@ -86,10 +84,9 @@ export default function BookingPage({ params }: BookingPageProps) {
     }
   };
 
-  // Calculate costs
+  // Calculate costs - user pays trip cost only, no extra fees
   const tripCost = plan ? plan.price * numAdults : 0;
-  const platformFee = Math.round(tripCost * (PLATFORM_FEE_PERCENT / 100));
-  const totalAmount = tripCost + platformFee;
+  const totalAmount = tripCost; // No extra platform fee
 
   const maxAdults = departure ? Math.min(10, departure.availableSeats) : 10;
 
@@ -124,6 +121,8 @@ export default function BookingPage({ params }: BookingPageProps) {
     setIsProcessing(true);
     setError("");
 
+    let createdBookingId: string | null = null;
+
     try {
       // Load Razorpay script
       const scriptLoaded = await loadRazorpayScript();
@@ -131,14 +130,33 @@ export default function BookingPage({ params }: BookingPageProps) {
         throw new Error("Failed to load Razorpay SDK");
       }
 
-      // Create order
-      const orderResponse = await fetch("/api/payments/create-order", {
+      // STEP 1: Create booking (pending state, seats reserved)
+      const bookingResponse = await fetch("/api/bookings/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId,
-          numPeople: numAdults,
           departureId: departure.departureId,
+          numPeople: numAdults,
+        }),
+      });
+
+      if (!bookingResponse.ok) {
+        const errorData = await bookingResponse.json();
+        throw new Error(errorData.error || "Failed to create booking");
+      }
+
+      const bookingData = await bookingResponse.json();
+      createdBookingId = bookingData.bookingId;
+
+      console.log("Booking created:", { bookingId: createdBookingId });
+
+      // STEP 2: Create Razorpay order
+      const orderResponse = await fetch("/api/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: createdBookingId,
         }),
       });
 
@@ -148,40 +166,30 @@ export default function BookingPage({ params }: BookingPageProps) {
       }
 
       const orderData = await orderResponse.json();
+      console.log("Payment order created:", orderData.orderId);
 
-      // Store order ID for later use
-      const createdOrderId = orderData.orderId;
-
-      // Razorpay checkout options
+      // STEP 3: Open Razorpay checkout
       const options = {
         key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency,
         name: "ExplorifyTrips",
         description: plan?.name || "Trip Booking",
-        order_id: createdOrderId,
+        order_id: orderData.orderId,
         handler: async function (response: any) {
           try {
-            console.log("Razorpay response:", response);
+            console.log("Razorpay payment success:", response);
 
-            const verifyPayload = {
-              orderId: createdOrderId, // Use the order ID we created
-              paymentId: response.razorpay_payment_id,
-              signature: response.razorpay_signature,
-              planId,
-              departureId: departure.departureId,
-              numAdults,
-              travelDate: departure.departureDate,
-              totalAmount,
-            };
-
-            console.log("Sending verification payload:", verifyPayload);
-
-            // Verify payment
+            // STEP 4: Verify payment (updates booking to confirmed)
             const verifyResponse = await fetch("/api/payments/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(verifyPayload),
+              body: JSON.stringify({
+                bookingId: createdBookingId,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
             });
 
             console.log("Verify response status:", verifyResponse.status);
@@ -195,17 +203,19 @@ export default function BookingPage({ params }: BookingPageProps) {
                 errorData = { error: `Server error: ${verifyResponse.status}` };
               }
               console.error("Verification error:", errorData);
-              throw new Error(errorData.error || "Payment verification failed");
+              
+              // Redirect to booking page even if verification fails
+              // Webhook will eventually confirm it
+              router.push(`/bookings/${createdBookingId}?processing=true`);
+              return;
             }
 
-            const verifyData = await verifyResponse.json();
-
-            // Redirect to success page
-            router.push(`/bookings/${verifyData.bookingId}?success=true`);
+            // Verification successful - redirect to success page
+            router.push(`/bookings/${createdBookingId}?success=true`);
           } catch (err) {
             console.error("Payment verification error:", err);
-            setError("Payment verification failed. Please contact support.");
-            setIsProcessing(false);
+            // Redirect to booking page, webhook will handle confirmation
+            router.push(`/bookings/${createdBookingId}?processing=true`);
           }
         },
         prefill: {
@@ -217,8 +227,25 @@ export default function BookingPage({ params }: BookingPageProps) {
           color: "#3b82f6",
         },
         modal: {
-          ondismiss: function () {
+          ondismiss: async function () {
+            console.log("User dismissed payment modal");
             setIsProcessing(false);
+            
+            // Cancel the pending booking and release seats
+            if (createdBookingId) {
+              try {
+                await fetch(`/api/bookings/${createdBookingId}/cancel`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    reason: "Payment cancelled by user",
+                  }),
+                });
+                console.log("Booking cancelled, seats released");
+              } catch (error) {
+                console.error("Failed to cancel booking:", error);
+              }
+            }
           },
         },
       };
@@ -227,8 +254,23 @@ export default function BookingPage({ params }: BookingPageProps) {
       razorpay.open();
     } catch (err) {
       console.error("Payment error:", err);
-      setError("Failed to initiate payment. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to initiate payment. Please try again.");
       setIsProcessing(false);
+      
+      // If booking was created but payment failed, try to cancel it
+      if (createdBookingId) {
+        try {
+          await fetch(`/api/bookings/${createdBookingId}/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              reason: "Payment initiation failed",
+            }),
+          });
+        } catch (cancelError) {
+          console.error("Failed to cancel booking after error:", cancelError);
+        }
+      }
     }
   };
 
@@ -254,9 +296,9 @@ export default function BookingPage({ params }: BookingPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center mask-[linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       {/* Floating Orbs */}
       <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
@@ -273,7 +315,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Complete Your Booking
             </span>
           </h1>
@@ -285,16 +327,18 @@ export default function BookingPage({ params }: BookingPageProps) {
               <div className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6">
                 <h2 className="text-2xl font-bold mb-4">Trip Summary</h2>
                 <div className="flex gap-4">
-                  <img
-                    src={plan.image}
+                  <Image
+                    src={plan.images?.[0] || "/placeholder-trip.jpg"}
                     alt={plan.name}
+                    width={96}
+                    height={96}
                     className="w-24 h-24 rounded-lg object-cover"
                   />
                   <div>
                     <h3 className="font-bold text-lg">{plan.name}</h3>
-                    {plan.route && plan.route.length > 0 && (
+                    {plan.stops && plan.stops.length > 0 && (
                       <p className="text-sm text-muted-foreground">
-                        {plan.route.join(" → ")}
+                        {plan.stops.map(s => s.name).join(" → ")}
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground mt-1">
@@ -435,16 +479,12 @@ export default function BookingPage({ params }: BookingPageProps) {
                     </span>
                     <span>₹{tripCost.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Platform fee ({PLATFORM_FEE_PERCENT}%)</span>
-                    <span>₹{platformFee.toLocaleString()}</span>
-                  </div>
                   <div className="border-t border-border/30 pt-4">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold">
                         Total Amount
                       </span>
-                      <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <span className="text-3xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         ₹{totalAmount.toLocaleString()}
                       </span>
                     </div>
@@ -455,7 +495,7 @@ export default function BookingPage({ params }: BookingPageProps) {
                   onClick={handlePayment}
                   disabled={isProcessing || !departure}
                   size="lg"
-                  className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 text-lg py-6"
+                  className="w-full rounded-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 text-lg py-6"
                 >
                   {isProcessing ? (
                     <>
@@ -482,10 +522,9 @@ export default function BookingPage({ params }: BookingPageProps) {
                       Cancellation Policy:
                     </p>
                     <ul className="text-xs text-muted-foreground space-y-1">
-                      <li>• 15+ days before trip: 100% refund of trip cost</li>
-                      <li>• 8-14 days before trip: 50% refund of trip cost</li>
+                      <li>• 15+ days before trip: 100% refund</li>
+                      <li>• 8-14 days before trip: 50% refund</li>
                       <li>• 1-7 days before trip: No refund</li>
-                      <li>• Platform fee (2%) is non-refundable</li>
                     </ul>
                   </div>
                 </div>

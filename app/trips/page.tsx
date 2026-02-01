@@ -10,7 +10,7 @@ export default async function TripsPage() {
   const plans = await getAllActivePlans();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
@@ -22,7 +22,7 @@ export default async function TripsPage() {
         {/* Header */}
         <div className="max-w-4xl mx-auto mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Explore Amazing
             </span>
             <br />
@@ -90,7 +90,7 @@ export default async function TripsPage() {
                     {/* Location */}
                     {(plan.startingPoint || plan.endingPoint) && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <MapPin className="w-4 h-4 shrink-0" />
                         <span className="line-clamp-1">
                           {plan.startingPoint && plan.endingPoint
                             ? `${plan.startingPoint} → ${plan.endingPoint}`
@@ -150,13 +150,13 @@ export default async function TripsPage() {
                         <div className="text-xs text-muted-foreground">
                           Starting from
                         </div>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        <div className="text-2xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                           ₹{plan.price.toLocaleString()}
                         </div>
                       </div>
                       <Button
                         asChild
-                        className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        className="rounded-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                       >
                         <Link href={`/trips/${plan.planId}`}>View Details</Link>
                       </Button>

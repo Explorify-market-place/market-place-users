@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { getBookingByPaymentId, updateBooking } from "@/lib/db-helpers";
+import { getBookingByPaymentId, updateBooking, incrementBookedSeats } from "@/lib/db-helpers";
+
 /*
  * RazorPay webhook handler
  * This handles events from RazorPay like payment.captured, payment.failed, refund.created, refund.processed, refund.failed
@@ -78,20 +79,20 @@ async function handlePaymentCaptured(payload: any) {
       `Payment captured: ${paymentId} for order: ${orderId}, amount: ₹${amount}`
     );
 
-    // Find booking by payment ID and verify it's marked as completed
+    // Find booking by payment ID
     const booking = await getBookingByPaymentId(paymentId);
     if (booking) {
-      // Booking should already be completed from the verify endpoint
-      // This is a backup confirmation
-      if (booking.paymentStatus !== "completed") {
-        console.warn(
-          `Booking ${booking.bookingId} payment status is ${booking.paymentStatus}, updating to completed`
-        );
+      // Only update if still pending (idempotency check)
+      if (booking.bookingStatus === "pending") {
         await updateBooking(booking.bookingId, {
+          bookingStatus: "confirmed",
           paymentStatus: "completed",
+          razorpayPaymentId: paymentId,
         });
+        console.log(`Booking ${booking.bookingId} confirmed via webhook`);
+      } else {
+        console.log(`Booking ${booking.bookingId} already ${booking.bookingStatus} (idempotent)`);
       }
-      console.log(`Payment confirmed for booking ${booking.bookingId}`);
     } else {
       console.warn(`No booking found for payment ID: ${paymentId}`);
     }
@@ -112,13 +113,29 @@ async function handlePaymentFailed(payload: any) {
       `Payment failed: ${paymentId} for order: ${orderId}, error: ${errorCode} - ${errorDescription}`
     );
 
-    // Find booking by payment ID and mark as failed
+    // Find booking by payment ID
     const booking = await getBookingByPaymentId(paymentId);
     if (booking) {
-      await updateBooking(booking.bookingId, {
-        paymentStatus: "failed",
-      });
-      console.log(`Marked booking ${booking.bookingId} as failed`);
+      // Only update if still pending (idempotency check)
+      if (booking.bookingStatus === "pending") {
+        await updateBooking(booking.bookingId, {
+          bookingStatus: "failed",
+          paymentStatus: "failed",
+          cancellationReason: `Payment failed: ${errorDescription}`,
+        });
+        
+        // Release seats back to departure
+        try {
+          await incrementBookedSeats(booking.departureId, -booking.numPeople);
+          console.log(`Released ${booking.numPeople} seats for failed booking ${booking.bookingId}`);
+        } catch (error) {
+          console.error(`Failed to release seats for booking ${booking.bookingId}:`, error);
+        }
+        
+        console.log(`Marked booking ${booking.bookingId} as failed and released seats`);
+      } else {
+        console.log(`Booking ${booking.bookingId} already ${booking.bookingStatus} (idempotent)`);
+      }
     } else {
       console.warn(`No booking found for failed payment ID: ${paymentId}`);
     }
@@ -144,7 +161,7 @@ async function handleRefundCreated(payload: any) {
     if (booking) {
       await updateBooking(booking.bookingId, {
         refundStatus: "processing",
-        refundRazorpayId: refundId,
+        razorpayRefundId: refundId,
         refundAmount: amount,
       });
       console.log(
@@ -174,7 +191,7 @@ async function handleRefundProcessed(payload: any) {
     if (booking) {
       await updateBooking(booking.bookingId, {
         refundStatus: "completed",
-        refundRazorpayId: refundId,
+        razorpayRefundId: refundId,
         refundAmount: amount,
         refundDate: new Date().toISOString(),
       });
@@ -205,7 +222,7 @@ async function handleRefundFailed(payload: any) {
     if (booking) {
       await updateBooking(booking.bookingId, {
         refundStatus: "rejected",
-        refundRazorpayId: refundId,
+        razorpayRefundId: refundId,
       });
       console.log(
         `Refund failed for booking ${booking.bookingId}, manual intervention required`
