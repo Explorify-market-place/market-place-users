@@ -4,6 +4,7 @@ import { transferToVendor } from "@/lib/razorpay";
 import { getBookingById, getPlanById, getUserById } from "@/lib/db-helpers";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamoDb, BOOKINGS_TABLE } from "@/lib/dynamodb";
+import type { ExpressionAttributeValues } from "@/types/dynamodb-utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -183,7 +184,7 @@ async function updateVendorPayoutStatus(
   vendorPayoutAmount?: number
 ) {
   const updateExpression: string[] = ["vendorPayoutStatus = :vendorPayoutStatus"];
-  const expressionAttributeValues: any = {
+  const expressionAttributeValues: ExpressionAttributeValues = {
     ":vendorPayoutStatus": vendorPayoutStatus,
   };
 

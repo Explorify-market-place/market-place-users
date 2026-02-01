@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       role: "user",
       vendorVerified: false,
       createdAt: now,
+      updatedAt: now,
     };
 
     await createUser(newUser);
