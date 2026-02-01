@@ -2,24 +2,6 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import type { RazorpayOrder, RazorpayRefundData, RazorpayError } from "@/types/razorpay";
 
-// Re-export for consumers
-export type { RazorpayOrder } from "@/types/razorpay"; // TODO: TO UNDERSTAND
-
-// Type definitions for Razorpay
-export interface RazorpayOrder {
-  id: string;
-  entity: string;
-  amount: number;
-  amount_paid: number;
-  amount_due: number;
-  currency: string;
-  receipt: string;
-  status: string;
-  attempts: number;
-  notes: Record<string, string>;
-  created_at: number;
-}
-
 /*
  *Initialize Razorpay instance
  */
