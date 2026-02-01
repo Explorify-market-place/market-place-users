@@ -1,91 +1,256 @@
+// app/page.tsx
+
+import Image from "next/image";
 import Link from "next/link";
 
-export default function Home() {
+/* ================= FETCH TRIPS (BACKEND SAFE) ================= */
+async function getTrips() {
+  try {
+    const res = await fetch("/api/trips", { cache: "no-store" });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+/* ================= DUMMY FALLBACK (GYG-STYLE) ================= */
+const dummyTrips = [
+  {
+    id: "d1",
+    title: "Paris: Eiffel Tower Guided Tour",
+    duration: "2 hours",
+    price: 4599,
+    rating: 4.7,
+    reviews: 2635,
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
+  },
+  {
+    id: "d2",
+    title: "Rome: Colosseum Skip-the-Line Experience",
+    duration: "3 hours",
+    price: 6299,
+    rating: 4.8,
+    reviews: 4121,
+    image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800",
+  },
+  {
+    id: "d3",
+    title: "Dubai: Desert Safari with BBQ Dinner",
+    duration: "6 hours",
+    price: 8999,
+    rating: 4.6,
+    reviews: 1783,
+    image: "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=800",
+  },
+  {
+    id: "d4",
+    title: "New York: Statue of Liberty & Ellis Island",
+    duration: "4 hours",
+    price: 5299,
+    rating: 4.7,
+    reviews: 2981,
+    image: "https://images.unsplash.com/photo-1541336032412-2048a678540d?w=800",
+  },
+  {
+    id: "d5",
+    title: "London: Beatles & Abbey Road Walking Tour",
+    duration: "2.5 hours",
+    price: 2504,
+    rating: 4.6,
+    reviews: 541,
+    image: "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=800",
+  },
+  {
+    id: "d6",
+    title: "San Diego: USS Midway Museum Entry",
+    duration: "Flexible",
+    price: 3757,
+    rating: 4.9,
+    reviews: 3863,
+    image:
+      "https://images.unsplash.com/photo-1530044426743-4b7125613d93?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8c2FuJTIwZGVpZ298ZW58MHx8MHx8fDA%3D",
+  },
+  {
+    id: "d7",
+    title: "Amsterdam: Canal Cruise Experience",
+    duration: "1 hour",
+    price: 2999,
+    rating: 4.5,
+    reviews: 1221,
+    image:
+      "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YW1zdGVyZGFtfGVufDB8fDB8fHww",
+  },
+  {
+    id: "d8",
+    title: "Paris: Louvre Museum Skip-the-Line",
+    duration: "3 hours",
+    price: 6700,
+    rating: 4.8,
+    reviews: 5170,
+    image:
+      "https://images.unsplash.com/photo-1662326478665-30d6d79f5cda?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8cGFyaXMlMjBtdXNldW18ZW58MHx8MHx8fDA%3D",
+  },
+];
+
+const mustSeeAttractions = [
+  {
+    title: "Statue of Liberty",
+    count: 164,
+    image:
+      "https://images.unsplash.com/photo-1762091409592-ed6d0dfed0ba?q=80&w=680&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
+  {
+    title: "Vatican Museums",
+    count: 518,
+    image: "https://images.unsplash.com/photo-1580502304784-8985b7eb7260?w=800",
+  },
+  {
+    title: "Eiffel Tower",
+    count: 507,
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
+  },
+  {
+    title: "Metropolitan Museum of Art",
+    count: 59,
+    image:
+      "https://images.unsplash.com/photo-1645793729490-b82a44905e5a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8bWV0cm9wb2xpdGFuJTIwbXVzZXVtJTIwb2YlMjBhcnR8ZW58MHx8MHx8fDA%3D",
+  },
+];
+
+export default async function Home() {
+  const backendTrips = await getTrips();
+  const trips = backendTrips.length ? backendTrips : dummyTrips;
+  const showFallbackSections = backendTrips.length === 0;
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+    <div className="bg-white text-black">
+      {/* ================= HERO (IMAGE + OVERLAY) ================= */}
+      <section className="relative h-[85vh] flex items-center justify-center">
+        <Image
+          src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1600"
+          alt="Travel"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-black/55" />
 
-      {/* Floating Orbs */}
-      <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="relative z-10 max-w-5xl text-center px-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6">
+            Discover & book{" "}
+            <span className="text-[#FF5A1F]">unforgettable experiences</span>
+          </h1>
 
-      <div className="relative z-10">
-        {/* Hero Section */}
-        <div className="container mx-auto px-4 py-20 md:py-32">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 animate-fade-in">
-              <span className="text-sm font-medium text-primary">
-                ✨ Explore the World with Confidence
-              </span>
-            </div>
+          <p className="text-white/90 text-lg mb-10">
+            Find top-rated things to do, tours & activities — trusted worldwide.
+          </p>
 
-            {/* Main Heading */}
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight animate-slide-down">
-              <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Discover Your Next
-              </span>
-              <br />
-              <span className="text-foreground">Adventure</span>
-            </h1>
+          <div className="flex bg-white rounded-full shadow-2xl overflow-hidden max-w-3xl mx-auto">
+            <input
+              className="flex-1 px-6 py-4 text-black outline-none"
+              placeholder="Find places and things to do"
+            />
+            <Link
+              href="/trips"
+              className="bg-[#FF5A1F] px-10 py-4 font-semibold text-white hover:bg-[#e14f1c]"
+            >
+              Search
+            </Link>
+          </div>
+        </div>
+      </section>
 
-            {/* Description */}
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-fade-in">
-              Book unforgettable trips to destinations worldwide. From hidden
-              gems to popular attractions, your perfect journey awaits.
-            </p>
+      {/* ================= ATTRACTIONS YOU CAN'T MISS (ONLY WHEN BACKEND EMPTY) ================= */}
+      {showFallbackSections && (
+        <section className="container mx-auto px-4 py-20">
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="text-4xl font-extrabold">
+              Attractions you can’t miss
+            </h2>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-scale-in">
-              <Link
-                href="/trips"
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 text-center"
-              >
-                Explore Trips →
-              </Link>
-              <Link
-                href="/auth/sign-in"
-                className="w-full sm:w-auto px-8 py-4 rounded-full border-2 border-border/50 hover:border-primary/50 bg-background/60 backdrop-blur-sm font-semibold hover:bg-accent/50 transition-all duration-200 text-center"
-              >
-                Get Started
-              </Link>
-            </div>
+            {/* Optional arrow like GetYourGuide */}
+            <span className="w-12 h-12 rounded-full border flex items-center justify-center text-xl cursor-pointer hover:bg-gray-100">
+              →
+            </span>
           </div>
 
-          {/* Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mt-20 max-w-6xl mx-auto">
-            {[
-              {
-                icon: "🌍",
-                title: "Global Destinations",
-                description:
-                  "Access hundreds of curated trips across continents",
-              },
-              {
-                icon: "⚡",
-                title: "Instant Booking",
-                description: "Quick and secure reservation process",
-              },
-              {
-                icon: "🛡️",
-                title: "Verified Operators",
-                description: "All tour operators are thoroughly vetted",
-              },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="bg-background/40 backdrop-blur-lg border border-border/30 rounded-2xl p-6 hover:border-primary/30 hover:shadow-xl transition-all duration-200 hover:scale-105"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {mustSeeAttractions.map((item) => (
+              <div key={item.title} className="group cursor-pointer">
+                <div className="relative h-48 rounded-2xl overflow-hidden">
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition duration-300"
+                  />
+                </div>
+
+                <h3 className="mt-4 font-bold text-lg">{item.title}</h3>
+
+                <p className="text-gray-500 text-sm">{item.count} activities</p>
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ================= EXPERIENCES ================= */}
+      <section className="container mx-auto px-4 py-24">
+        <h2 className="text-4xl font-extrabold mb-14">
+          Unforgettable travel experiences
+        </h2>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          {trips.map((trip: any) => (
+            <Link
+              key={trip.id}
+              href={`/trips/${trip.id}`}
+              className="group bg-white rounded-2xl overflow-hidden shadow hover:shadow-2xl transition"
+            >
+              {/* IMAGE */}
+              <div className="relative h-56">
+                <Image
+                  src={trip.image}
+                  alt={trip.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition"
+                />
+
+                {/* BADGES */}
+                <span className="absolute top-3 left-3 bg-black/80 text-white text-xs px-3 py-1 rounded-full">
+                  ✔ Verified by ExplorifyTrips
+                </span>
+
+                <span className="absolute top-3 right-3 bg-white rounded-full w-9 h-9 flex items-center justify-center text-lg shadow">
+                  ♡
+                </span>
+              </div>
+
+              {/* CONTENT */}
+              <div className="p-5">
+                <h3 className="font-semibold text-lg leading-snug line-clamp-2 mb-2">
+                  {trip.title}
+                </h3>
+
+                <p className="text-sm text-gray-500 mb-3">{trip.duration}</p>
+
+                <div className="flex items-center gap-2 text-sm mb-3">
+                  <span className="font-bold">⭐ {trip.rating}</span>
+                  <span className="text-gray-500">
+                    ({trip.reviews.toLocaleString()})
+                  </span>
+                </div>
+
+                <div className="font-bold text-[#FF5A1F] text-lg">
+                  From ₹{trip.price}
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
