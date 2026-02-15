@@ -1,0 +1,15 @@
+{
+  "name": "session",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "session_bg.wasm",
+    "session.js",
+    "session.d.ts"
+  ],
+  "main": "session.js",
+  "types": "session.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
