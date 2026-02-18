@@ -41,7 +41,6 @@ impl SessionManager {
             "get_hotel_details" => "Getting hotel booking link",
             "get_room_availability" => "Checking available rooms",
             "get_hotel_description" => "Reading about a hotel",
-            "get_place_image_url" => "Gathering images",
             _ => "Magic!",
         }
     }

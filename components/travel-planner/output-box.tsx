@@ -106,7 +106,7 @@ export function OutputBox({ prompt }: { prompt: string }) {
             {/* Streamed / final HTML response */}
             {html ? (
                 <div
-                    className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-xl [&_img]:shadow-md"
+                    className="tp-prose max-w-none"
                     dangerouslySetInnerHTML={{ __html: html }}
                 />
             ) : isStreaming ? (

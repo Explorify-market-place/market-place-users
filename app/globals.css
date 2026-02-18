@@ -120,3 +120,112 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Travel Planner markdown output ── */
+.tp-prose {
+  line-height: 1.7;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+
+/* Headings */
+.tp-prose h1, .tp-prose h2, .tp-prose h3, .tp-prose h4 {
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+.tp-prose h1 { font-size: 1.5em; }
+.tp-prose h2 {
+  font-size: 1.25em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+.tp-prose h3 { font-size: 1.1em; }
+.tp-prose h4 { font-size: 1em; color: var(--muted-foreground); }
+
+/* Paragraphs & lists */
+.tp-prose p { margin: 0.75em 0; }
+.tp-prose ul, .tp-prose ol { margin: 0.5em 0; padding-left: 1.5em; }
+.tp-prose li { margin: 0.25em 0; }
+.tp-prose li::marker { color: var(--muted-foreground); }
+
+/* Tables */
+.tp-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.tp-prose thead th {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.tp-prose tbody td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.tp-prose tbody tr:last-child td { border-bottom: none; }
+.tp-prose tbody tr:nth-child(even) { background: var(--muted); }
+.tp-prose tbody tr:hover { background: var(--accent); }
+
+/* Strong & emphasis */
+.tp-prose strong { font-weight: 700; }
+.tp-prose em { font-style: italic; }
+
+/* Links */
+.tp-prose a {
+  color: oklch(0.6 0.2 260);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dark .tp-prose a { color: oklch(0.75 0.18 260); }
+.tp-prose a:hover { opacity: 0.8; }
+
+/* Code */
+.tp-prose code {
+  font-size: 0.85em;
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  background: var(--muted);
+}
+.tp-prose pre {
+  margin: 1em 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--muted);
+  overflow-x: auto;
+}
+.tp-prose pre code { padding: 0; background: none; }
+
+/* Blockquotes */
+.tp-prose blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+/* Horizontal rules */
+.tp-prose hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* Images */
+.tp-prose img {
+  border-radius: 0.75rem;
+  margin: 0.75em 0;
+  max-width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
