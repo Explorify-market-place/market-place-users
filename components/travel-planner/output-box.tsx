@@ -31,7 +31,7 @@ export function OutputBox({ prompt }: { prompt: string }) {
             });
 
             if (!response.ok || !response.body) {
-                setHtml(`<p class="text-red-500">Error: ${response.statusText}</p>`);
+                setHtml(`<p class="text-red-500">Error: ${response.status} ${response.statusText}</p>`);
                 setIsStreaming(false);
                 return;
             }
@@ -72,9 +72,7 @@ export function OutputBox({ prompt }: { prompt: string }) {
             // 4. Stream finished — `received` is the final payload (token_map JSON)
             try {
                 tokenMapRef.current = JSON.parse(received);
-            } catch {
-                console.error("Failed to parse token map:", received);
-            }
+            } catch (e) { console.error(`Token map parse failed: ${e}\nReceived\n${received}`) }
 
             // 5. Final render with resolved photo URLs
             setIsStreaming(false);

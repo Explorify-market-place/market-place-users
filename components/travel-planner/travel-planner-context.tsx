@@ -28,16 +28,19 @@ export function TravelPlannerProvider({ children }: { children: ReactNode }) {
     const tokenMapRef = useRef<string[]>([]);
 
     useEffect(() => {
-        // Load and init WASM once
+        // Load and init WASM once — served from public/ for production compatibility
         (async () => {
-            const wasmUrl = new URL(
-                "@/lib/travel-planner/session/pkg/session_bg.wasm",
-                import.meta.url
-            );
-            const wasmBytes = await fetch(wasmUrl).then((r) => r.arrayBuffer());
-            initSync(wasmBytes);
-            smRef.current = new SessionManager();
-            setReady(true);
+            try {
+                const wasmBytes = await fetch("/session_bg.wasm").then((r) => {
+                    if (!r.ok) throw new Error(`WASM fetch failed: ${r.status}`);
+                    return r.arrayBuffer();
+                });
+                initSync({ module: wasmBytes });
+                smRef.current = new SessionManager();
+                setReady(true);
+            } catch (e) {
+                console.error("Failed to init travel planner WASM:", e);
+            }
         })();
     }, []);
 
