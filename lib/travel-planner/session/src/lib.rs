@@ -11,20 +11,11 @@ impl SessionManager {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
-            session: Session::new(10),
+            session: Session::new(50),
         }
-    }
-    pub fn add_reply(&mut self, parts: &str) {
-        self.session.reply_parts(from_str(parts).unwrap());
     }
     pub fn add_reply_string(&mut self, reply: &str) {
         self.session.reply(reply);
-    }
-    pub fn ask(&mut self, parts: &str) {
-        match from_str(parts) {
-            Ok(parts) => self.session.ask_parts(parts),
-            Err(e) => self.session.ask(format!("INVALID_RESPONSE:\n{e}")),
-        };
     }
     pub fn ask_string(&mut self, query: &str) {
         self.session.ask(query);
@@ -50,18 +41,33 @@ impl SessionManager {
             "get_hotel_details" => "Getting hotel booking link",
             "get_room_availability" => "Checking available rooms",
             "get_hotel_description" => "Reading about a hotel",
+            "get_place_image_url" => "Gathering images",
             _ => "Magic!",
         }
     }
-    pub fn last_parts(&self) -> String {
+    pub fn last_function_calls(&self) -> Vec<String> {
         let mut calls = Vec::new();
         for part in self.session.get_last_chat().unwrap().parts() {
             if let PartType::FunctionCall(call) = part.data() {
-                calls.push(Self::function_name_to_text(call.name()));
+                calls.push(Self::function_name_to_text(call.name()).to_string());
             }
         }
         calls.sort();
         calls.dedup();
-        calls.join(",")
+        calls
+    }
+    pub fn add_chat(&mut self, chat: &str) {
+        match from_str(chat) {
+            Ok(chat) => {
+                if let Err(e) = self.session.add_chat(chat) {
+                    self.session
+                        .reply(format!("ERROR: INVALID SESSION HISTORY\n{e}"));
+                }
+            }
+            Err(e) => {
+                self.session
+                    .reply(format!("ERROR: INVALID RESPONSE FORMAT\n{e}"));
+            }
+        }
     }
 }

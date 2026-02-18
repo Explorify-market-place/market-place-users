@@ -4,13 +4,12 @@
 export class SessionManager {
     free(): void;
     [Symbol.dispose](): void;
-    add_reply(parts: string): void;
+    add_chat(chat: string): void;
     add_reply_string(reply: string): void;
-    ask(parts: string): void;
     ask_string(query: string): void;
     get_last_reply(): string;
     get_session(): string;
-    last_parts(): string;
+    last_function_calls(): string[];
     constructor();
 }
 
@@ -19,18 +18,18 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_sessionmanager_free: (a: number, b: number) => void;
-    readonly sessionmanager_add_reply: (a: number, b: number, c: number) => void;
+    readonly sessionmanager_add_chat: (a: number, b: number, c: number) => void;
     readonly sessionmanager_add_reply_string: (a: number, b: number, c: number) => void;
-    readonly sessionmanager_ask: (a: number, b: number, c: number) => void;
     readonly sessionmanager_ask_string: (a: number, b: number, c: number) => void;
     readonly sessionmanager_get_last_reply: (a: number) => [number, number];
     readonly sessionmanager_get_session: (a: number) => [number, number];
-    readonly sessionmanager_last_parts: (a: number) => [number, number];
+    readonly sessionmanager_last_function_calls: (a: number) => [number, number];
     readonly sessionmanager_new: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+    readonly __externref_drop_slice: (a: number, b: number) => void;
     readonly __wbindgen_start: () => void;
 }
 
