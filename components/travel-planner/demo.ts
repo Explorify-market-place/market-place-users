@@ -1,5 +1,3 @@
-// app/api/stream/route.ts
-import { LambdaClient, InvokeWithResponseStreamCommand } from "../../node_modules/@aws-sdk/client-lambda";
 import { SessionManager, initSync } from "../../lib/travel-planner/session/pkg/session";
 import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
@@ -11,25 +9,35 @@ const __dirname = dirname(__filename);
 const wasmPath = resolve(__dirname, "../../lib/travel-planner/session/pkg/session_bg.wasm");
 initSync(readFileSync(wasmPath));
 
-const renderer = new marked.Renderer()
 const sessionManager = new SessionManager();
 const token_map: string[] = []
 
-async function response_to_html(markdown: string, proxy_url_map: string[][]): Promise<string> {
-    renderer.image = (img) => {
-        let href = img.href
-        for (const [proxy, base64] of proxy_url_map) {
-            if (href == proxy) {
-                return `<img src="${base64}" alt="${img.text}">`
-            }
+async function resolvePlacesUrl(url: string): Promise<string> {
+    return fetch(url.replace("key=placeholder_api_key", "key=" + process.env.GOOGLE_MAPS_API_KEY) + "&skipHttpRedirect=true")
+        .then(r => r.json())
+        .catch((e) => { console.error(e); return placeholder_url })
+        .then(data => data.photoUri)
+}
+const placeholder_url = "https://placehold.co/400"
+async function responseToHtml(markdown: string, resolve_url: boolean): Promise<string> {
+    const regex = /https:\/\/places\.googleapis\.com\/v1\/[^\s)]+/g;
+    if (resolve_url) {
+        const links = markdown.match(regex);
+        if (links) {
+            const results = await Promise.all(
+                links.map(url => resolvePlacesUrl(url))
+            );
+            const lookup = new Map(links.map((url, i) => [url, results[i]]));
+            markdown = markdown.replace(regex, (match) => {
+                return lookup.get(match) || placeholder_url;
+            });
         }
-        return `<img src="${img.href}" alt="${img.text}">`
-    }
-    return await marked.parse(markdown, { renderer })
+    } else markdown = markdown.replaceAll(regex, placeholder_url)
+
+    return await marked.parse(markdown);
 }
 export async function ask(prompt: string, token_map: string[]) {
     sessionManager.ask_string(prompt);
-    console.log(sessionManager.get_session());
 
     const response = await fetch("https://um4h654pnnpflvmqr62irtlflm0ujjhf.lambda-url.ap-south-1.on.aws/", {
         method: "POST",
@@ -63,9 +71,8 @@ export async function ask(prompt: string, token_map: string[]) {
         console.log(function_calls.length ? function_calls : ["Planning.."])
     }
     try {
-        const others = JSON.parse(received);
-        token_map = others.token_map
-        console.log(await response_to_html(sessionManager.get_last_reply(), others.proxy_url_map), token_map)
+        token_map = JSON.parse(received)
+        console.log(await responseToHtml(sessionManager.get_last_reply(), true), token_map)
     } catch {
         console.error("Wrong format", received)
     }
