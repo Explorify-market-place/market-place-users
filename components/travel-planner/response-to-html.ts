@@ -38,5 +38,9 @@ export async function responseToHtml(
         markdown = markdown.replaceAll(PLACES_REGEX, PLACEHOLDER);
     }
 
+    markdown = markdown.replaceAll(
+        "cid=metasearch|googleflights",
+        "cid=metasearch%7Cgoogleflights"
+    );
     return await marked.parse(markdown);
 }
