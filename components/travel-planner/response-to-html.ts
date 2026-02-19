@@ -1,4 +1,11 @@
-import { marked } from "marked";
+import { marked, Renderer } from "marked";
+
+const renderer = new Renderer();
+renderer.link = ({ href, title, text }) => {
+    const titleAttr = title ? ` title="${title}"` : "";
+    return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+};
+marked.use({ renderer });
 
 const PLACEHOLDER = "https://placehold.net/default.svg";
 const PLACES_REGEX = /https:\/\/places\.googleapis\.com\/v1\/[^\s)]+/g;
