@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import ProfileMenu from "./ProfileMenu";
-import { MapPin, Ticket } from "lucide-react";
+import { MapPin, Ticket, Compass } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
@@ -13,6 +13,7 @@ export default function Navbar() {
 
   const navItems = [
     { href: "/trips", label: "Browse Trips", icon: MapPin },
+    { href: "/travel-planner", label: "Travel Planner", icon: Compass },
     { href: "/bookings", label: "My Bookings", icon: Ticket },
   ];
 
