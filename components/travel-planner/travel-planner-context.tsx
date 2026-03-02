@@ -27,6 +27,8 @@ interface TravelPlannerCtx {
     setPlan: React.Dispatch<React.SetStateAction<PlanState>>;
     messages: ChatMessage[];
     addMessage: (msg: ChatMessage) => void;
+    saveSession: () => void;
+    resetSession: () => void;
 }
 
 const Ctx = createContext<TravelPlannerCtx>(null!);
@@ -48,6 +50,33 @@ export function TravelPlannerProvider({ children }: { children: ReactNode }) {
         setMessages((prev) => [...prev, msg]);
     }, []);
 
+    const saveSession = useCallback(() => {
+        if (!smRef.current || !tripInput) return;
+        try {
+            localStorage.setItem("explorify_trip_session", JSON.stringify({
+                sessionStr: smRef.current.get_session(),
+                tokenMap: tokenMapRef.current,
+                tripInput,
+                plan,
+                messages,
+            }));
+        } catch (e) {
+            console.error("Failed to save session", e);
+        }
+    }, [tripInput, plan, messages]);
+
+    const resetSession = useCallback(() => {
+        localStorage.removeItem("explorify_trip_session");
+        setTripInput(null);
+        setPlan(emptyPlanState());
+        setMessages([]);
+        tokenMapRef.current = [];
+        if (smRef.current) {
+            smRef.current.free();
+            smRef.current = new SessionManager();
+        }
+    }, []);
+
     useEffect(() => {
         // Load and init WASM once — served from public/ for production compatibility
         (async () => {
@@ -57,7 +86,23 @@ export function TravelPlannerProvider({ children }: { children: ReactNode }) {
                     return r.arrayBuffer();
                 });
                 initSync({ module: wasmBytes });
-                smRef.current = new SessionManager();
+
+                const saved = localStorage.getItem("explorify_trip_session");
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        smRef.current = SessionManager.from_str(data.sessionStr);
+                        tokenMapRef.current = data.tokenMap || [];
+                        setTripInput(data.tripInput);
+                        setPlan(data.plan);
+                        setMessages(data.messages);
+                    } catch (err) {
+                        console.error("Failed to parse saved session", err);
+                        smRef.current = new SessionManager();
+                    }
+                } else {
+                    smRef.current = new SessionManager();
+                }
                 setReady(true);
             } catch (e) {
                 console.error("Failed to init travel planner WASM:", e);
@@ -77,6 +122,8 @@ export function TravelPlannerProvider({ children }: { children: ReactNode }) {
                 setPlan,
                 messages,
                 addMessage,
+                saveSession,
+                resetSession,
             }}
         >
             {children}

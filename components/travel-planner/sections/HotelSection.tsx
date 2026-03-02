@@ -2,7 +2,6 @@
 
 import { type HotelDetails } from "../plan-types";
 import { Star, ExternalLink } from "lucide-react";
-import Image from "next/image";
 
 function HotelCard({ h }: { h: HotelDetails }) {
     return (
@@ -10,12 +9,10 @@ function HotelCard({ h }: { h: HotelDetails }) {
             {/* Image */}
             {h.image_url && (
                 <div className="relative w-full h-36 rounded-xl overflow-hidden mb-3">
-                    <Image
+                    <img
                         src={h.image_url}
                         alt={h.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition duration-300"
-                        sizes="280px"
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
                 </div>
             )}
@@ -31,8 +28,8 @@ function HotelCard({ h }: { h: HotelDetails }) {
                     <Star
                         key={i}
                         className={`w-3.5 h-3.5 ${i < Math.round(h.rating)
-                                ? "text-amber-400 fill-amber-400"
-                                : "text-gray-300 dark:text-gray-600"
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-gray-300 dark:text-gray-600"
                             }`}
                     />
                 ))}

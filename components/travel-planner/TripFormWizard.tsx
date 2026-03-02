@@ -14,6 +14,7 @@ interface TripDetails {
     adults: number;
     children: number;
     budget: string;
+    preferences: string;
 }
 
 interface Prediction {
@@ -142,22 +143,6 @@ function PlacesInput({
 
 /* ─── Sub-components ─── */
 
-function StepLabel({ icon: Icon, label, stepNum }: { icon: any; label: string; stepNum: number }) { // eslint-disable-line @typescript-eslint/no-explicit-any
-    return (
-        <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-[#FF5A1F]/10 flex items-center justify-center">
-                <Icon className="w-4 h-4 text-[#FF5A1F]" />
-            </div>
-            <div>
-                <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">
-                    Step {stepNum}
-                </p>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{label}</p>
-            </div>
-        </div>
-    );
-}
-
 function NextButton({ onClick, disabled, label = "Continue" }: { onClick: () => void; disabled: boolean; label?: string }) {
     return (
         <button
@@ -187,6 +172,7 @@ export default function TripFormWizard() {
         adults: 1,
         children: 0,
         budget: "",
+        preferences: "",
     });
 
     const onStartSelect = useCallback((place: string) => {
@@ -212,7 +198,7 @@ export default function TripFormWizard() {
         <div className="w-full max-w-xl mx-auto">
             {/* ── Step 0: Starting Point ── */}
             <div className={`tp-field-enter relative z-[5] ${step >= 0 ? "tp-field-visible" : ""}`}>
-                <StepLabel icon={MapPin} label="Where are you starting from?" stepNum={1} />
+
                 <PlacesInput
                     placeholder="Search city…"
                     value={details.startingPoint}
@@ -230,7 +216,7 @@ export default function TripFormWizard() {
             {/* ── Step 1: Destination ── */}
             {step >= 1 && (
                 <div className="tp-field-enter tp-field-visible mt-8 relative z-[4]">
-                    <StepLabel icon={MapPin} label="Where do you want to go?" stepNum={2} />
+
                     <PlacesInput
                         placeholder="Search destination…"
                         value={details.destination}
@@ -249,7 +235,7 @@ export default function TripFormWizard() {
             {/* ── Step 2: Dates ── */}
             {step >= 2 && (
                 <div className="tp-field-enter tp-field-visible mt-8 relative z-[3]">
-                    <StepLabel icon={Calendar} label="When are you travelling?" stepNum={3} />
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block font-medium">Start date</label>
@@ -288,8 +274,6 @@ export default function TripFormWizard() {
             {/* ── Step 3: Travellers ── */}
             {step >= 3 && (
                 <div className="tp-field-enter tp-field-visible mt-8 relative z-[2]">
-                    <StepLabel icon={Users} label="Who's coming along?" stepNum={4} />
-
                     <div className="flex flex-col gap-4">
                         {/* Adults */}
                         <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-xl px-5 py-3">
@@ -372,23 +356,35 @@ export default function TripFormWizard() {
                 </div>
             )}
 
-            {/* ── Step 4: Budget ── */}
+            {/* ── Step 4: Budget & Preferences ── */}
             {step >= 4 && (
                 <div className="tp-field-enter tp-field-visible mt-8 relative z-[1]">
-                    <StepLabel icon={Wallet} label="What's your budget?" stepNum={5} />
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">₹</span>
-                        <input
-                            type="number"
-                            className={inputClass + " pl-9"}
-                            placeholder="e.g. 50000"
-                            min="0"
-                            value={details.budget}
-                            onChange={(e) =>
-                                setDetails((d) => ({ ...d, budget: e.target.value }))
-                            }
-                            autoFocus
-                        />
+
+                    <div className="flex flex-col gap-4">
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">₹</span>
+                            <input
+                                type="number"
+                                className={inputClass + " pl-9"}
+                                placeholder="Budget e.g. 50000"
+                                min="0"
+                                value={details.budget}
+                                onChange={(e) =>
+                                    setDetails((d) => ({ ...d, budget: e.target.value }))
+                                }
+                                autoFocus
+                            />
+                        </div>
+                        <div className="relative">
+                            <textarea
+                                className={inputClass + " resize-none h-24"}
+                                placeholder="Any other preferences? (e.g. Vegetarian food only, wheelchair accessible)"
+                                value={details.preferences}
+                                onChange={(e) =>
+                                    setDetails((d) => ({ ...d, preferences: e.target.value }))
+                                }
+                            />
+                        </div>
                     </div>
 
                     {/* CTA */}

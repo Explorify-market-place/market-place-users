@@ -53,6 +53,7 @@ export interface TripInput {
     adults: number;
     children: number;
     budget: string;
+    preferences: string;
 }
 
 /* ── Accumulated plan state (sections start empty) ── */
@@ -140,9 +141,12 @@ export function tripInputToPrompt(input: TripInput): string {
     const parts = [
         `Plan a trip from ${input.startingPoint} to ${input.destination}.`,
         `Dates: ${input.startDate} to ${input.endDate}.`,
-        `Travellers: ${input.adults} adult(s)${input.children > 0 ? `, ${input.children} child(ren)` : ""}.`,
+        `Travellers: ${input.adults} adult, ${input.children} child.`,
         `Budget: ₹${Number(input.budget).toLocaleString("en-IN")}.`,
     ];
+    if (input.preferences.trim()) {
+        parts.push(`Preferences/Notes: ${input.preferences.trim()}`);
+    }
     return parts.join("\n");
 }
 
@@ -156,5 +160,8 @@ export function tripInputSummary(input: TripInput): string {
         `👥 ${input.adults} adult(s)${input.children > 0 ? `, ${input.children} child(ren)` : ""}`,
         `💰 Budget: ₹${Number(input.budget).toLocaleString("en-IN")}`,
     ];
+    if (input.preferences.trim()) {
+        lines.push(`✨ Preferences: ${input.preferences.trim()}`);
+    }
     return lines.join("  \n");
 }

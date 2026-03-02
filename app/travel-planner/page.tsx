@@ -27,6 +27,8 @@ function Dashboard() {
         setPlan,
         messages,
         addMessage,
+        saveSession,
+        resetSession,
     } = useTravelPlanner();
 
     const [isStreaming, setIsStreaming] = useState(false);
@@ -138,20 +140,30 @@ function Dashboard() {
         if (!ready || !tripInput || hasInitiated.current) return;
         hasInitiated.current = true;
 
+        // If we restored from localStorage, messages already exist — don’t re-send
+        if (messages.length > 0) return;
+
         // Add the user's trip summary as the first message
         addMessage({ role: "user", text: tripInputSummary(tripInput) });
 
         // Build prompt and stream
         const prompt = tripInputToPrompt(tripInput);
         streamPrompt(prompt);
-    }, [ready, tripInput, addMessage, streamPrompt]);
+    }, [ready, tripInput, addMessage, streamPrompt, messages.length]);
 
-    /* ── Redirect if no trip input ── */
+    /* ── Redirect or load saved session ── */
     useEffect(() => {
         if (ready && !tripInput && !hasInitiated.current) {
             router.replace("/travel-planner/details");
         }
     }, [ready, tripInput, router]);
+
+    /* ── Save session when streaming is done ── */
+    useEffect(() => {
+        if (!isStreaming && ready && tripInput && hasInitiated.current) {
+            saveSession();
+        }
+    }, [isStreaming, plan, messages, ready, tripInput, saveSession]);
 
     /* ── Handle follow-up messages ── */
     function handleSend(text: string) {
@@ -182,20 +194,31 @@ function Dashboard() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
             {/* Header */}
-            <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl px-6 py-4">
-                <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                    ✈️ Your Trip Plan
-                </h1>
-                {tripInput && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {tripInput.startingPoint} → {tripInput.destination} · {tripInput.startDate} to {tripInput.endDate}
-                    </p>
-                )}
+            <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                        ✈️ Your Trip Plan
+                    </h1>
+                    {tripInput && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {tripInput.startingPoint} → {tripInput.destination} · {tripInput.startDate} to {tripInput.endDate}
+                        </p>
+                    )}
+                </div>
+                <button
+                    onClick={() => {
+                        resetSession();
+                        router.push("/travel-planner/details");
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                >
+                    Start Over
+                </button>
             </header>
 
             {/* Function-call status pills (while streaming) */}
             {isStreaming && functionCalls.length > 0 && (
-                <div className="flex flex-wrap gap-2 px-6 pt-4">
+                <div className="sticky top-[65px] z-20 flex flex-wrap gap-2 px-6 py-3 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-md">
                     {functionCalls.map((call, i) => (
                         <span
                             key={i}

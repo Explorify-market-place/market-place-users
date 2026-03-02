@@ -33,7 +33,7 @@ function UserBubble({ text }: { text: string }) {
 
     return (
         <div className="flex justify-end">
-            <div className="max-w-[75%] bg-[#FF5A1F] text-white rounded-2xl rounded-br-sm px-4 py-3 shadow">
+            <div className="max-w-[75%] bg-[#C2410C] text-white rounded-2xl rounded-br-sm px-4 py-3 shadow">
                 <div
                     className="tp-prose tp-prose-invert text-sm"
                     dangerouslySetInnerHTML={{ __html: html }}
