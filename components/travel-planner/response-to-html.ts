@@ -21,6 +21,8 @@ export async function responseToHtml(
     markdown: string,
     resolveUrls: boolean
 ): Promise<string> {
+    if (!markdown) return "";
+
     if (resolveUrls) {
         const links = markdown.match(PLACES_REGEX);
         if (links) {

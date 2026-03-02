@@ -328,3 +328,120 @@
   font-size: 0.875rem;
   color: inherit;
 }
+
+/* ── Travel Planner Dashboard Sections ── */
+.tp-section {
+  margin-bottom: 0.5rem;
+}
+
+.tp-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.75rem;
+  padding-left: 0.125rem;
+}
+
+/* Horizontal scrollable row */
+.tp-hscroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tp-hscroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tp-hscroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tp-hscroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+/* Transport cards */
+.tp-transport-card {
+  flex: 0 0 300px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.tp-transport-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .tp-transport-card:hover {
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.04);
+}
+
+/* Hotel cards */
+.tp-hotel-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.tp-hotel-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .tp-hotel-card:hover {
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.04);
+}
+
+/* Itinerary day cards */
+.tp-itinerary-card {
+  flex: 0 0 360px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.tp-itinerary-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .tp-itinerary-card:hover {
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.04);
+}
+
+/* Inverted prose for user chat bubbles on orange bg */
+.tp-prose-invert {
+  color: white;
+}
+
+.tp-prose-invert a {
+  color: white;
+  text-decoration: underline;
+}
+
+.tp-prose-invert strong {
+  color: white;
+  font-weight: 700;
+}
