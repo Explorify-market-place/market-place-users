@@ -34,6 +34,55 @@ function Dashboard() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [functionCalls, setFunctionCalls] = useState<string[]>([]);
     const hasInitiated = useRef(false);
+    const photosResolved = useRef(false);
+    const PLACES_REGEX = /https:\/\/places\.googleapis\.com\/v1\/[^\s)"]+/g;
+
+    /* ── Resolve all Google Places photo URLs in-place after streaming ── */
+    const resolvePhotos = useCallback(async () => {
+        // Collect all Places URLs from hotels + itinerary
+        const urls = new Set<string>();
+
+        for (const h of plan.hotels) {
+            if (h.image_url && PLACES_REGEX.test(h.image_url)) {
+                urls.add(h.image_url);
+                PLACES_REGEX.lastIndex = 0;
+            }
+        }
+        for (const a of plan.itinerary) {
+            if (a.plan) {
+                for (const m of a.plan.matchAll(PLACES_REGEX)) {
+                    urls.add(m[0]);
+                }
+            }
+        }
+
+        if (urls.size === 0) return;
+
+        try {
+            const res = await fetch("/api/travel-planner/resolve-photos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ urls: [...urls] }),
+            });
+            const { resolved } = (await res.json()) as { resolved: Record<string, string> };
+
+            setPlan((prev) => ({
+                ...prev,
+                hotels: prev.hotels.map((h) => ({
+                    ...h,
+                    image_url: h.image_url && resolved[h.image_url] ? resolved[h.image_url] : h.image_url,
+                })),
+                itinerary: prev.itinerary.map((a) => ({
+                    ...a,
+                    plan: a.plan
+                        ? a.plan.replace(PLACES_REGEX, (match) => resolved[match] ?? match)
+                        : a.plan,
+                })),
+            }));
+        } catch (e) {
+            console.error("Photo resolution failed:", e);
+        }
+    }, [plan.hotels, plan.itinerary, setPlan]);
 
     /* ── Stream a prompt through session manager → API → merge plan ── */
     const streamPrompt = useCallback(
@@ -42,6 +91,7 @@ function Dashboard() {
 
             setIsStreaming(true);
             setFunctionCalls(["Planning…"]);
+            photosResolved.current = false;
 
             // 1. Register the user prompt in the session
             sessionManager.ask_string(prompt);
@@ -158,12 +208,16 @@ function Dashboard() {
         }
     }, [ready, tripInput, router]);
 
-    /* ── Save session when streaming is done ── */
+    /* ── Save session & resolve photos when streaming is done ── */
     useEffect(() => {
         if (!isStreaming && ready && tripInput && hasInitiated.current) {
             saveSession();
+            if (!photosResolved.current) {
+                photosResolved.current = true;
+                resolvePhotos();
+            }
         }
-    }, [isStreaming, plan, messages, ready, tripInput, saveSession]);
+    }, [isStreaming, ready, tripInput, saveSession, resolvePhotos]);
 
     /* ── Handle follow-up messages ── */
     function handleSend(text: string) {
