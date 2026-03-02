@@ -1,0 +1,92 @@
+{
+  "outbound": {
+    "flights": [
+      {
+        "name": "IndiGo (6E 191, 6E 743)",
+        "booking_link": "https://www.goindigo.in/flight-select-redirection.html?cid=metasearch|googleflights&fareType=R&flightNumber=191_743&gclid=ADowPOJu5hJjNUta0yruSklrMWZ2EiYqmitxaQTKxcX5LPUdOH0LkQMWJvTh9LEj2njx46RDKdbdig2Wf4sZCwWpLpr8YgksXimnSpk2i4gD8FJs9p4&gclsrc=gf#ixr/goi/20260301/INR/200",
+        "price": "₹17,406",
+        "departure_from_source": "2026-03-01T20:00:00",
+        "arrival_at_destination": "2026-03-02T06:55:00",
+        "description": "Connecting flight via Hyderabad. Total duration: 10h 55m. Includes 7kg carry-on."
+      }
+    ],
+    "trains": []
+  },
+  "inbound": {
+    "flights": [
+      {
+        "name": "IndiGo (6E 985, 6E 421)",
+        "booking_link": "https://www.goindigo.in/flight-select-redirection.html?cid=metasearch|googleflights&fareType=R&flightNumber=985_421&gclid=ADowPOLbeIpL2Ax6kItg_dPUkMho5x_ow-H8oFL_MZO8wpCW0oQ2mfmROj88Rw3A4A_RNq7TZnyZ7-VklV3x25HsY9YkJmuESejk5-takFVvCljtwVA&gclsrc=gf#goi/ixr/20260308/INR/200",
+        "price": "₹19,238",
+        "departure_from_source": "2026-03-08T23:05:00",
+        "arrival_at_destination": "2026-03-09T09:00:00",
+        "description": "Late night return flight via Hyderabad. Arrives in Ranchi next morning."
+      }
+    ],
+    "trains": []
+  },
+  "message": "I've planned your 7-day Goa workation! Since you're coding, I've prioritized highly-rated co-working hostels and mid-range hotels in North Goa known for reliable Wi-Fi and community vibes. \n\nYour total flight cost for two adults is ₹36,644, leavingapproximately ₹13,356 for accommodation and food. This is a bit tight for standard mid-range hotels (which usually start at ₹3,000/night), so I've included top-tier co-working hostels like Zostel and The Hosteller, which offer private rooms that fit better withinyour ₹50,000 total budget.",
+  "hotels": [
+    {
+      "name": "The Hosteller Bam Goa, Saligao",
+      "booking_link": "https://www.thehosteller.com/hostels/bam-goa-saligao",
+      "price": "₹2,500 - ₹3,500 per night",
+      "rating": 4.8,
+      "description": "Perfect for coders! This property is designed for digital nomads with dedicated work spaces and high-speed Wi-Fi.",
+      "image_url": "https://places.googleapis.com/v1/places/ChIJiW0xFwDBvzsR-PTt-4437P0/photos/ATCDNfWEDcD5hrT3xQJcuhOFnbR0ocU0g0HJJDMPy-6dhvhd-9d-Ue1swZKijtry3beeTXDU3-ZlVawPJOT-ixxgnovYCMU8O7o03EGHO2kh0s2tbPBoc92iWNj88TJGS-d9rzvcfcn7ZbxhABgNGQMpX-KScsjrXBK0JVC7_dM6aEfZcfPuPSUnzLUPVOB1-nfsKGGZiWFSig9NCOk0XZ3ah_OKxm9jHiedaeIBTiN85uzVWyovsxSOehdr0m6kfTFGu2bGC_LOi6zn-gBwlt3eMdTWDoc51K3JIhP04qaTF8Ck9g/media?key=placeholder_api_key&maxHeightPx=400"
+    },
+    {
+      "name": "Zostel Goa (Anjuna)",
+      "booking_link": "https://www.zostel.com/zostel/goa/zostel-goa-anjuna-goah706",
+      "price": "₹2,000 - ₹3,000 per night",
+      "rating": 4.4,
+      "description": "A legendary spot for travelers. Offers a mix of social atmosphere and quiet corners to get your work done nearAnjuna beach.",
+      "image_url": "https://places.googleapis.com/v1/places/ChIJ3x04-Y_pvzsRV9HALRpAyAI/photos/ATCDNfXmlHuwSUAwM3pzOLoJ5q6T_MWAD7y5m82Oy32DpiFVHKcIlsVdHiiSVjf1cPRJg0V1QxY69ciA4yUvZBeZEu7dtwbiysqO2XTT8FJMqkgD-V8yGCctqMBABGWbuOv0v88EfkdS8XscE2JvYDPuzRbkoTgvO2UdGNrN5wPqORobwbBBa7Ey58CovZJDNwmXWdBpzuYTADIfquTLIEm9IxFI1TQfll3df51FwcqVU9Xlb1P3hhGTu5Ziv90AXVVW8Rf6hwrt8Km84Ert0gClPplnuMKYZrfE96T1yMexMesOOA/media?key=placeholder_api_key&maxHeightPx=400"
+    },
+    {
+      "name": "Calangute Residency (GTDC)",
+      "booking_link": "https://goa-tourism.com/",
+      "price": "₹4,000 - ₹5,000 per night",
+      "rating": 4.0,
+      "description": "Government-run property with direct beach access. Reliable and situated right in the heart of Calangute.",
+      "image_url": "https://places.googleapis.com/v1/places/ChIJNafmdgfqvzsRQS9iQ9AZJak/photos/ATCDNfXj4UJLiihnZ3ryOIBtirkDg8_dg8KEh5PZ2mqu3i0wEUFawsHr-ZnjE2KkRU2IMGMDdYHJ91VWHiCikd4aZyzVgiNe-D2HflNaPtwClJn2HMpy4LBubAIW9z8ntT8sz78EndRHKBniJYGboDudI3IXv7HYc6zBclyjGXQc7WRJ15uRBjSJZ97S5v73_17nXEu14BCv3xhoANs00i7Z04n_edjH5Edu1yAdLlH7l-Aq2NZLY0FMVAZU6fd2m72BpJq_d8n0F41PY__bMyP3gOKLKE6uaDqE48OMPtgV868Hl-BQMeny912Z2mQUJOU80ODtPDUPmOqGHkTvneeqoQo9Ebul4K-EZDxy0kUe-T8Z0rGcjc6To4tlG_pSatUsHZUj3mOfKodITM5pEaHmoVqjA6-dU1MfknjAEVHZeNd7Tw/media?key=placeholder_api_key&maxHeightPx=400"
+    }
+  ],
+  "itinerary": [
+    {
+      "title": "Arrival & Coastal Sunset",
+      "plan": "Arrive at Dabolim Airport and take a prepaid taxi to North Goa. Check into your hostel/hotel and set up your workstation. In the evening, head to Calangute Beach to watch the sunset and enjoy your first Goan meal at a beach shack.\n\n![](https://places.googleapis.com/v1/places/ChIJNafmdgfqvzsRQS9iQ9AZJak/photos/ATCDNfXj4UJLiihnZ3ryOIBtirkDg8_dg8KEh5PZ2mqu3i0wEUFawsHr-ZnjE2KkRU2IMGMDdYHJ91VWHiCikd4aZyzVgiNe-D2HflNaPtwClJn2HMpy4LBubAIW9z8ntT8sz78EndRHKBniJYGboDudI3IXv7HYc6zBclyjGXQc7WRJ15uRBjSJZ97S5v73_17nXEu14BCv3xhoANs00i7Z04n_edjH5Edu1yAdLlH7l-Aq2NZLY0FMVAZU6fd2m72BpJq_d8n0F41PY__bMyP3gOKLKE6uaDqE48OMPtgV868Hl-BQMeny912Z2mQUJOU80ODtPDUPmOqGHkTvneeqoQo9Ebul4K-EZDxy0kUe-T8Z0rGcjc6To4tlG_pSatUsHZUj3mOfKodITM5pEaHmoVqjA6-dU1MfknjAEVHZeNd7Tw/media?key=placeholder_api_key&maxHeightPx=400)",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Calangute+Beach"
+    },
+    {
+      "title": "Fort Aguada Exploration",
+      "plan": "Morning: Work session from your hotel. \nAfternoon: Visit **Fort Aguada**, a 17th-century Portuguese fort offering sweeping views of the Arabian Sea. Explore the lighthouse nearby. \nEvening: Relax at Sinquerim Beach.\n\n![](https://places.googleapis.com/v1/places/ChIJa72MxnXBvzsRHHtpszB2g6M/photos/ATCDNfWIDPh_gvgdnsYptfJvwQSb_lOVs2VmXeEYdZvRmLS4Iug9LGcfIcc5_sg28zJ8jutMh7F78IhqwcV9tim7-BkPmOaDV7s1ppIPTZYsoJEuAbkRCqoCpS85F8nc7E7l_9oamHP2ZnMKinwyU9gqje5ii19FJKPOEUeC8WXh-HKNKYnv7R0fwHDqAGTdWc-UbvBm3xnGZYufTuDXylDiGILueDKGoNxzuPsD8ioJk54kE_JEFrq7WVBPcXR3YidlEW5wtiIlnMiNEScCjUbVcQN5CJofUPU5MT2uvGB4aOhfAt8IjjrVR9g85cb86pTr22jo2d8ucZFOZ5M2JlwZXKaqhpCqmUw6Gy2uuTkDVaxzWqjHYJW12LCxNrlRWCz1NBWTKQq8-pS2f8g5DRnaKs4uHiupH_amNtr-0veam8zTqg/media?key=placeholder_api_key&maxHeightPx=400)",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Fort+Aguada"
+    },
+    {
+      "title": "Baga Beach & Night Market",
+      "plan": "Spend the morning working from one of the many cafes in Baga. After finishing your tasks, explore the vibrant Baga Lane. If you're up for it, visit a night market for some local crafts and street food.",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Baga+Beach"
+    },
+    {
+      "title": "Anjuna Flea Market (Wednesday Special)",
+      "plan": "Since it's Wednesday, head to the famous **Anjuna Flea Market**. It's a great place to soak in the hippie culture of oa. Work from a cafe overlooking the Anjuna cliffs in the evening.",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Anjuna+Flea+Market"
+    },
+    {
+      "title": "Chapora Fort (The Dil Chahta Hai Spot)",
+      "plan": "Visit the iconic **Chapora Fort** in the afternoon. It's a short hike but offers one of the best sunset views in North Goa over Vagator Beach. \n\n![](https://places.googleapis.com/v1/places/ChIJ56FVYsbpvzsRB6GFWwDiCzc/photos/ATCDNfXFEKYfrA_HNnz3UZaAPKH5B4mk4dXAZHOVSOQVrnCrldFDBoe2lChZ5u_-ywclbinQwHAqh-uztRNaatjy_NJcZms0NEt4HwseS9bmpTD24z6jk_YBS3W4miYoKsSbAhnaIO64W6s7ly4aqXAZ54YYdtjTED21Ed92DCAyKoAMrtDDnYAyBOSkakJWISp24BriRLCYz6HiouNVLUkfNltRFFFSpu0ncmBKKYAVhLmnwvZXhSODT1eBsyfIblhfEI1VLreQvNalCcpIgVJyQ2-WRYRc1qYXOM2zz2Q2ghwmcxobBWEzupJqun5_-mfiezLKzo8OQWx6u7wONZCE_3NgtQ-A5BsOC8tdA5DpU4UmCZZSoNDzVxBhPxRlXQj_NOnzrEea9W-1NxitlzUGcLgDSs-KVnT19breev8fpu3GhA/media?key=placeholder_api_key&maxHeightPx=400)",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Chapora+Fort"
+    },
+    {
+      "title": "Old Goa Heritage Tour",
+      "plan": "Take a break from the beaches and head to **Old Goa**. Visit the Basilica of Bom Jesus and Se Cathedral to admire thestunning colonial architecture. On the way back, stop at Panjim to see the colorful streets of Fontainhas.",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Basilica+of+Bom+Jesus"
+    },
+    {
+      "title": "Relaxed Morning & Departure",
+      "plan": "Enjoy a slow morning at a local bakery (like German Bakery in Anjuna). Pack your bags and maybe do some last-minute gift shopping in Panjim before heading to the airport for your late-night flight back to Ranchi.",
+      "google_map_url": "https://www.google.com/maps/search/?api=1&query=Panjim+Goa"
+    }
+  ]
+}
