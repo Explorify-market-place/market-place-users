@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { MapPin, Calendar, Users, Wallet, ChevronRight, Plane } from "lucide-react";
+import { useTravelPlanner } from "./travel-planner-context";
 
 /* ─── Types ─── */
 interface TripDetails {
@@ -174,6 +176,8 @@ function NextButton({ onClick, disabled, label = "Continue" }: { onClick: () => 
 
 /* ─── Main Wizard ─── */
 export default function TripFormWizard() {
+    const router = useRouter();
+    const { setTripInput } = useTravelPlanner();
     const [step, setStep] = useState(0);
     const [details, setDetails] = useState<TripDetails>({
         startingPoint: "",
@@ -200,8 +204,8 @@ export default function TripFormWizard() {
 
     /* ─── Handlers ─── */
     function handleSubmit() {
-        console.log("Trip details:", details);
-        alert("Trip details captured! (Next feature: plan generation)");
+        setTripInput(details);
+        router.push("/travel-planner");
     }
 
     return (

@@ -1,122 +1,238 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { parse } from "partial-json";
+import { useTravelPlanner } from "@/components/travel-planner/travel-planner-context";
 import {
-    TravelPlannerProvider,
-    useTravelPlanner,
-} from "@/components/travel-planner/travel-planner-context";
-import { OutputBox } from "@/components/travel-planner/output-box";
+    mergePlan,
+    tripInputToPrompt,
+    tripInputSummary,
+    type PlanOutputSchema,
+} from "@/components/travel-planner/plan-types";
+import TransportSection from "@/components/travel-planner/sections/TransportSection";
+import HotelSection from "@/components/travel-planner/sections/HotelSection";
+import ItinerarySection from "@/components/travel-planner/sections/ItinerarySection";
+import MessageThread from "@/components/travel-planner/sections/MessageThread";
+import { useState } from "react";
 
-function ChatUI() {
-    const { ready } = useTravelPlanner();
-    const [messages, setMessages] = useState<
-        { role: "user" | "assistant"; text: string }[]
-    >([]);
-    const [input, setInput] = useState("");
-    const bottomRef = useRef<HTMLDivElement>(null);
+function Dashboard() {
+    const router = useRouter();
+    const {
+        sessionManager,
+        tokenMapRef,
+        ready,
+        tripInput,
+        plan,
+        setPlan,
+        messages,
+        addMessage,
+    } = useTravelPlanner();
 
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [functionCalls, setFunctionCalls] = useState<string[]>([]);
+    const hasInitiated = useRef(false);
+
+    /* ── Stream a prompt through session manager → API → merge plan ── */
+    const streamPrompt = useCallback(
+        async (prompt: string) => {
+            if (!sessionManager) return;
+
+            setIsStreaming(true);
+            setFunctionCalls(["Planning…"]);
+
+            // 1. Register the user prompt in the session
+            sessionManager.ask_string(prompt);
+
+            // 2. POST to server-side proxy
+            const response = await fetch("/api/travel-planner/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    session: JSON.parse(sessionManager.get_session()),
+                    token_map: tokenMapRef.current,
+                }),
+            });
+
+            if (!response.ok || !response.body) {
+                addMessage({
+                    role: "assistant",
+                    text: `Error: ${response.status} ${response.statusText}`,
+                });
+                setIsStreaming(false);
+                setFunctionCalls([]);
+                return;
+            }
+
+            // 3. Stream the response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let received = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                received += decoder.decode(value, { stream: true });
+                const chunks = received.split("\n");
+
+                if (chunks.length <= 1) continue;
+
+                // Keep the last (possibly incomplete) chunk for next iteration
+                received = chunks.pop()!;
+
+                for (const chunk of chunks) {
+                    sessionManager.add_chat(chunk);
+                }
+
+                // Show current function calls
+                const calls = sessionManager.last_function_calls();
+                setFunctionCalls(calls.length ? calls : ["Planning…"]);
+
+                // Parse partial reply and merge into plan
+                const partialReply = sessionManager.get_last_reply();
+                if (partialReply) {
+                    try {
+                        const replyJson = parse(partialReply) as Partial<PlanOutputSchema>;
+                        setPlan((prev) => mergePlan(prev, replyJson));
+                    } catch {
+                        /* partial parse may fail — ignore */
+                    }
+                }
+            }
+
+            // 4. Stream finished — `received` is the final payload (token_map JSON)
+            try {
+                tokenMapRef.current = JSON.parse(received);
+            } catch (e) {
+                console.error(`Token map parse failed: ${e}\nReceived\n${received}`);
+            }
+
+            // 5. Final render from completed reply
+            const finalReply = sessionManager.get_last_reply();
+            if (finalReply) {
+                try {
+                    const replyJson = parse(finalReply) as Partial<PlanOutputSchema>;
+                    setPlan((prev) => mergePlan(prev, replyJson));
+
+                    // Append the message as a new assistant chat message
+                    if (replyJson.message) {
+                        addMessage({
+                            role: "assistant",
+                            text: replyJson.message,
+                        });
+                    }
+                } catch (e) {
+                    console.error("Final parse failed:", e);
+                }
+            }
+
+            setIsStreaming(false);
+            setFunctionCalls([]);
+        },
+        [sessionManager, tokenMapRef, setPlan, addMessage]
+    );
+
+    /* ── Initial prompt on mount ── */
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        if (!ready || !tripInput || hasInitiated.current) return;
+        hasInitiated.current = true;
 
-    function handleSend() {
-        const text = input.trim();
-        if (!text || !ready) return;
-        setMessages((prev) => [
-            ...prev,
-            { role: "user", text },
-            { role: "assistant", text },
-        ]);
-        setInput("");
+        // Add the user's trip summary as the first message
+        addMessage({ role: "user", text: tripInputSummary(tripInput) });
+
+        // Build prompt and stream
+        const prompt = tripInputToPrompt(tripInput);
+        streamPrompt(prompt);
+    }, [ready, tripInput, addMessage, streamPrompt]);
+
+    /* ── Redirect if no trip input ── */
+    useEffect(() => {
+        if (ready && !tripInput && !hasInitiated.current) {
+            router.replace("/travel-planner/details");
+        }
+    }, [ready, tripInput, router]);
+
+    /* ── Handle follow-up messages ── */
+    function handleSend(text: string) {
+        addMessage({ role: "user", text });
+        streamPrompt(text);
+    }
+
+    const hasOutbound =
+        (plan.outbound.flights?.length ?? 0) > 0 ||
+        (plan.outbound.trains?.length ?? 0) > 0;
+    const hasInbound =
+        (plan.inbound.flights?.length ?? 0) > 0 ||
+        (plan.inbound.trains?.length ?? 0) > 0;
+    const hasHotels = plan.hotels.length > 0;
+    const hasItinerary = plan.itinerary.length > 0;
+
+    if (!ready) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center space-y-3">
+                    <div className="w-10 h-10 border-3 border-[#FF5A1F] border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-sm text-gray-500">Loading travel planner…</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="flex flex-col h-[100dvh] bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
             {/* Header */}
-            <header className="shrink-0 border-b border-border/40 bg-background/60 backdrop-blur-xl px-6 py-4">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    ✈️ Travel Planner
+            <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl px-6 py-4">
+                <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                    ✈️ Your Trip Plan
                 </h1>
-                <p className="text-xs text-muted-foreground">
-                    Ask me anything about your next trip
-                </p>
+                {tripInput && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {tripInput.startingPoint} → {tripInput.destination} · {tripInput.startDate} to {tripInput.endDate}
+                    </p>
+                )}
             </header>
 
-            {/* Messages area */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-                {!ready && (
-                    <div className="text-center text-sm text-muted-foreground py-20">
-                        Loading travel planner…
-                    </div>
-                )}
-
-                {ready && messages.length === 0 && (
-                    <div className="text-center py-20 space-y-3">
-                        <p className="text-4xl">🌍</p>
-                        <p className="text-lg font-semibold">Where do you want to go?</p>
-                        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                            Tell me your destination, dates, budget and preferences — I&apos;ll
-                            plan your perfect trip.
-                        </p>
-                    </div>
-                )}
-
-                {messages.map((msg, i) =>
-                    msg.role === "user" ? (
-                        <div key={i} className="flex justify-end">
-                            <div className="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-3 text-sm shadow whitespace-pre-wrap">
-                                {msg.text}
-                            </div>
-                        </div>
-                    ) : (
-                        <div
+            {/* Function-call status pills (while streaming) */}
+            {isStreaming && functionCalls.length > 0 && (
+                <div className="flex flex-wrap gap-2 px-6 pt-4">
+                    {functionCalls.map((call, i) => (
+                        <span
                             key={i}
-                            className="max-w-[85%] bg-background/70 backdrop-blur border border-border/30 rounded-2xl rounded-bl-sm px-5 py-4 shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FF5A1F]/10 text-[#FF5A1F] animate-pulse"
                         >
-                            <OutputBox prompt={msg.text} />
-                        </div>
-                    )
-                )}
-                <div ref={bottomRef} />
-            </div>
+                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                            {call}
+                        </span>
+                    ))}
+                </div>
+            )}
 
-            {/* Input bar */}
-            <div className="shrink-0 border-t border-border/40 bg-background/60 backdrop-blur-xl px-4 py-3">
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        handleSend();
-                    }}
-                    className="flex gap-2 max-w-4xl mx-auto"
-                >
-                    <input
-                        className="flex-1 rounded-full border border-border/50 bg-background px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/40 transition"
-                        placeholder={
-                            ready
-                                ? "e.g. Plan a 5-day Goa trip for 2 adults…"
-                                : "Loading…"
-                        }
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        disabled={!ready}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!ready || !input.trim()}
-                        className="px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-sm hover:from-blue-700 hover:to-purple-700 disabled:opacity-40 transition shadow"
-                    >
-                        Send
-                    </button>
-                </form>
+            {/* Sections */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+                {hasOutbound && (
+                    <TransportSection title="🛫 Outbound — Getting There" transports={plan.outbound} />
+                )}
+
+                {hasInbound && (
+                    <TransportSection title="🛬 Inbound — Coming Back" transports={plan.inbound} />
+                )}
+
+                {hasHotels && <HotelSection hotels={plan.hotels} />}
+
+                {hasItinerary && <ItinerarySection itinerary={plan.itinerary} />}
+
+                {/* Messages — always visible once there are any */}
+                <MessageThread
+                    messages={messages}
+                    onSend={handleSend}
+                    isStreaming={isStreaming}
+                />
             </div>
         </div>
     );
 }
 
 export default function TravelPlannerPage() {
-    return (
-        <TravelPlannerProvider>
-            <ChatUI />
-        </TravelPlannerProvider>
-    );
+    return <Dashboard />;
 }
