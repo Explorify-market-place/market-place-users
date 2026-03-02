@@ -31,7 +31,7 @@ function DayCard({ activity, dayNum }: { activity: Activity; dayNum: number }) {
 
             {/* Rendered markdown plan */}
             <div
-                className="tp-prose text-sm"
+                className="tp-prose text-base leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: html }}
             />
 

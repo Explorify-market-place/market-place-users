@@ -30,7 +30,7 @@ export default function TravelPlannerDetailsPage() {
                     <span className="text-[#FF5A1F]">dream trip</span>
                 </h1>
                 <p className="text-white/80 text-center text-sm md:text-base mb-10 max-w-md">
-                    Fill in the details below and we&apos;ll craft the perfect itinerary for you.
+                    We&apos;ll craft the perfect itinerary for you, with best booking links across all providers.
                 </p>
 
                 {/* Card */}

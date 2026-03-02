@@ -37,7 +37,7 @@ function HotelCard({ h }: { h: HotelDetails }) {
             </div>
 
             {/* Description */}
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-3">
                 {h.description}
             </p>
 

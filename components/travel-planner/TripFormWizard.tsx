@@ -184,6 +184,13 @@ export default function TripFormWizard() {
 
     const today = new Date().toISOString().split("T")[0];
 
+    // If there's already a saved session, redirect to the dashboard
+    useEffect(() => {
+        if (localStorage.getItem("explorify_trip_session")) {
+            router.replace("/travel-planner");
+        }
+    }, [router]);
+
     const inputClass =
         "w-full px-5 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 " +
         "placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#FF5A1F]/40 focus:border-[#FF5A1F] transition-all text-sm";
@@ -366,7 +373,7 @@ export default function TripFormWizard() {
                             <input
                                 type="number"
                                 className={inputClass + " pl-9"}
-                                placeholder="Budget e.g. 50000"
+                                placeholder="Total Budget e.g. 50000"
                                 min="0"
                                 value={details.budget}
                                 onChange={(e) =>

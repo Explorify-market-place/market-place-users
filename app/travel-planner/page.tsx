@@ -266,7 +266,7 @@ function Dashboard() {
                     }}
                     className="px-4 py-2 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                 >
-                    Start Over
+                    &#8635; Re-plan
                 </button>
             </header>
 
@@ -287,6 +287,13 @@ function Dashboard() {
 
             {/* Sections */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+                {/* Messages — at the top */}
+                <MessageThread
+                    messages={messages}
+                    onSend={handleSend}
+                    isStreaming={isStreaming}
+                />
+
                 {hasOutbound && (
                     <TransportSection title="🛫 Outbound — Getting There" transports={plan.outbound} />
                 )}
@@ -298,13 +305,6 @@ function Dashboard() {
                 {hasHotels && <HotelSection hotels={plan.hotels} />}
 
                 {hasItinerary && <ItinerarySection itinerary={plan.itinerary} />}
-
-                {/* Messages — always visible once there are any */}
-                <MessageThread
-                    messages={messages}
-                    onSend={handleSend}
-                    isStreaming={isStreaming}
-                />
             </div>
         </div>
     );
