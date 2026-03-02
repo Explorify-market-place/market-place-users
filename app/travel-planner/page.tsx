@@ -192,12 +192,12 @@ function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-24">
             {/* Header */}
             <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl px-6 py-4 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                        ✈️ Your Trip Plan
+                        Travel planner
                     </h1>
                     {tripInput && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
