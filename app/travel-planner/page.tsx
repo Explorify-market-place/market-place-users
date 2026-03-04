@@ -43,9 +43,11 @@ function Dashboard() {
         const urls = new Set<string>();
 
         for (const h of plan.hotels) {
-            if (h.image_url && PLACES_REGEX.test(h.image_url)) {
-                urls.add(h.image_url);
-                PLACES_REGEX.lastIndex = 0;
+            for (const url of h.image_urls) {
+                if (PLACES_REGEX.test(url)) {
+                    urls.add(url);
+                    PLACES_REGEX.lastIndex = 0;
+                }
             }
         }
         for (const a of plan.itinerary) {
@@ -70,7 +72,7 @@ function Dashboard() {
                 ...prev,
                 hotels: prev.hotels.map((h) => ({
                     ...h,
-                    image_url: h.image_url && resolved[h.image_url] ? resolved[h.image_url] : h.image_url,
+                    image_urls: h.image_urls.map((url) => resolved[url] ?? url),
                 })),
                 itinerary: prev.itinerary.map((a) => ({
                     ...a,
@@ -251,7 +253,7 @@ function Dashboard() {
             <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl px-6 py-4 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                        Travel planner
+                        Travel Planner
                     </h1>
                     {tripInput && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

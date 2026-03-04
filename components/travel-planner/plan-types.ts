@@ -17,8 +17,10 @@ export interface HotelDetails {
     booking_link: string;
     /** Should be in INR */
     price: string;
-    image_url?: string | null;
+    /** Photos from get_hotel_details tool */
+    image_urls: string[];
     rating: number;
+    /** Markdown string */
     description: string;
 }
 
