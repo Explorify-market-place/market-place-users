@@ -5,6 +5,7 @@ export const __wbg_sessionmanager_free: (a: number, b: number) => void;
 export const sessionmanager_add_chat: (a: number, b: number, c: number) => void;
 export const sessionmanager_add_reply_string: (a: number, b: number, c: number) => void;
 export const sessionmanager_ask_string: (a: number, b: number, c: number) => void;
+export const sessionmanager_from_str: (a: number, b: number) => number;
 export const sessionmanager_get_last_reply: (a: number) => [number, number];
 export const sessionmanager_get_session: (a: number) => [number, number];
 export const sessionmanager_last_function_calls: (a: number) => [number, number];

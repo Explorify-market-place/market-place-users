@@ -1,4 +1,4 @@
-use gemini_client_api::gemini::types::{request::PartType, sessions::Session};
+use gemini_client_api::gemini::types::sessions::Session;
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::*;
 
@@ -12,6 +12,11 @@ impl SessionManager {
     pub fn new() -> Self {
         Self {
             session: Session::new(50),
+        }
+    }
+    pub fn from_str(session: &str) -> Self {
+        Self {
+            session: serde_json::from_str(session).unwrap(),
         }
     }
     pub fn add_reply_string(&mut self, reply: &str) {
@@ -45,12 +50,13 @@ impl SessionManager {
         }
     }
     pub fn last_function_calls(&self) -> Vec<String> {
-        let mut calls = Vec::new();
-        for part in self.session.get_last_chat().unwrap().parts() {
-            if let PartType::FunctionCall(call) = part.data() {
-                calls.push(Self::function_name_to_text(call.name()).to_string());
-            }
-        }
+        let mut calls: Vec<String> = self
+            .session
+            .get_last_chat()
+            .unwrap()
+            .get_function_calls()
+            .map(|v| Self::function_name_to_text(v.name()).into())
+            .collect();
         calls.sort();
         calls.dedup();
         calls

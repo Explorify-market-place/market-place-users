@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useTravelPlanner } from "./travel-planner-context";
 import { responseToHtml } from "./response-to-html";
+import { parse } from 'partial-json'
 
 export function OutputBox({ prompt }: { prompt: string }) {
     const { sessionManager, tokenMapRef } = useTravelPlanner();
@@ -64,7 +65,8 @@ export function OutputBox({ prompt }: { prompt: string }) {
                 // Show partial reply with placeholder images
                 const partialReply = sessionManager.get_last_reply();
                 if (partialReply) {
-                    const partialHtml = await responseToHtml(partialReply, false);
+                    const replyJson = parse(partialReply)
+                    const partialHtml = await responseToHtml(replyJson.message + '\n' + replyJson.itinerary?.join('\n'), false); //Just for demo I have concatenated all of them.
                     setHtml(partialHtml);
                 }
             }
@@ -80,7 +82,8 @@ export function OutputBox({ prompt }: { prompt: string }) {
 
             const finalReply = sessionManager.get_last_reply();
             if (finalReply) {
-                const finalHtml = await responseToHtml(finalReply, true);
+                const replyJson = parse(finalReply)
+                const finalHtml = await responseToHtml(replyJson.message + '\n' + replyJson.itinerary?.join('\n'), false); //Just for demo I have concatenated all of them.
                 setHtml(finalHtml);
             }
         })();

@@ -7,6 +7,7 @@ export class SessionManager {
     add_chat(chat: string): void;
     add_reply_string(reply: string): void;
     ask_string(query: string): void;
+    static from_str(session: string): SessionManager;
     get_last_reply(): string;
     get_session(): string;
     last_function_calls(): string[];
@@ -21,6 +22,7 @@ export interface InitOutput {
     readonly sessionmanager_add_chat: (a: number, b: number, c: number) => void;
     readonly sessionmanager_add_reply_string: (a: number, b: number, c: number) => void;
     readonly sessionmanager_ask_string: (a: number, b: number, c: number) => void;
+    readonly sessionmanager_from_str: (a: number, b: number) => number;
     readonly sessionmanager_get_last_reply: (a: number) => [number, number];
     readonly sessionmanager_get_session: (a: number) => [number, number];
     readonly sessionmanager_last_function_calls: (a: number) => [number, number];
