@@ -15,6 +15,7 @@ import HotelSection from "@/components/travel-planner/sections/HotelSection";
 import ItinerarySection from "@/components/travel-planner/sections/ItinerarySection";
 import MessageThread from "@/components/travel-planner/sections/MessageThread";
 import { useState } from "react";
+import { Send } from "lucide-react";
 
 function Dashboard() {
     const router = useRouter();
@@ -31,6 +32,7 @@ function Dashboard() {
         resetSession,
     } = useTravelPlanner();
 
+    const [input, setInput] = useState("");
     const [isStreaming, setIsStreaming] = useState(false);
     const [functionCalls, setFunctionCalls] = useState<string[]>([]);
     const hasInitiated = useRef(false);
@@ -223,8 +225,10 @@ function Dashboard() {
 
     /* ── Handle follow-up messages ── */
     function handleSend(text: string) {
-        addMessage({ role: "user", text });
-        streamPrompt(text);
+        if (!text.trim() || isStreaming) return;
+        addMessage({ role: "user", text: text.trim() });
+        streamPrompt(text.trim());
+        setInput("");
     }
 
     const hasOutbound =
@@ -292,7 +296,6 @@ function Dashboard() {
                 {/* Messages — at the top */}
                 <MessageThread
                     messages={messages}
-                    onSend={handleSend}
                     isStreaming={isStreaming}
                 />
 
@@ -307,6 +310,38 @@ function Dashboard() {
                 {hasHotels && <HotelSection hotels={plan.hotels} />}
 
                 {hasItinerary && <ItinerarySection itinerary={plan.itinerary} />}
+            </div>
+
+            {/* Sticky Message Input Bar */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 p-4 md:p-6 pointer-events-none">
+                <div className="max-w-3xl mx-auto pointer-events-auto">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSend(input);
+                        }}
+                        className="flex gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg p-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-2xl"
+                    >
+                        <input
+                            className="flex-1 bg-transparent px-5 py-3 text-sm outline-none placeholder:text-gray-400 dark:text-gray-100"
+                            placeholder={
+                                isStreaming
+                                    ? "Waiting for response…"
+                                    : "Ask for changes or details…"
+                            }
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            disabled={isStreaming}
+                        />
+                        <button
+                            type="submit"
+                            disabled={isStreaming || !input.trim()}
+                            className="px-5 py-3 rounded-full bg-[#FF5A1F] text-white font-semibold text-sm hover:bg-[#e14f1c] disabled:opacity-30 disabled:cursor-not-allowed transition shadow-lg shadow-[#FF5A1F]/20 flex items-center justify-center shrink-0"
+                        >
+                            <Send className="w-4 h-4" />
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

@@ -45,33 +45,22 @@ function UserBubble({ text }: { text: string }) {
 
 export default function MessageThread({
     messages,
-    onSend,
     isStreaming,
 }: {
     messages: ChatMessage[];
-    onSend: (text: string) => void;
     isStreaming: boolean;
 }) {
-    const [input, setInput] = useState("");
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        const text = input.trim();
-        if (!text || isStreaming) return;
-        onSend(text);
-        setInput("");
-    }
-
     return (
         <section className="tp-section">
             <h2 className="tp-section-title">💬 Messages</h2>
 
-            <div className="space-y-4 mb-4">
+            <div className="space-y-4">
                 {messages.map((msg, i) =>
                     msg.role === "user" ? (
                         <UserBubble key={i} text={msg.text} />
@@ -89,28 +78,6 @@ export default function MessageThread({
                 )}
                 <div ref={bottomRef} />
             </div>
-
-            {/* Input bar */}
-            <form onSubmit={handleSubmit} className="flex gap-2">
-                <input
-                    className="flex-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-[#FF5A1F]/40 focus:border-[#FF5A1F] transition"
-                    placeholder={
-                        isStreaming
-                            ? "Waiting for response…"
-                            : "Ask to update itinerary, hotels, etc."
-                    }
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    disabled={isStreaming}
-                />
-                <button
-                    type="submit"
-                    disabled={isStreaming || !input.trim()}
-                    className="px-5 py-3 rounded-full bg-[#FF5A1F] text-white font-semibold text-sm hover:bg-[#e14f1c] disabled:opacity-30 disabled:cursor-not-allowed transition shadow-lg shadow-[#FF5A1F]/20"
-                >
-                    <Send className="w-4 h-4" />
-                </button>
-            </form>
         </section>
     );
 }
