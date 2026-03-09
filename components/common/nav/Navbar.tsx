@@ -18,10 +18,11 @@ export default function Navbar() {
   ];
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 transition-all duration-300 pointer-events-none">
-      <div className="mx-auto max-w-7xl rounded-2xl transition-all duration-500 pointer-events-auto border backdrop-blur-md bg-white/70 dark:bg-slate-950/70 shadow-lg border-white/20 dark:border-slate-800/50">
-        <div className="px-6 h-16 flex items-center justify-between gap-6">
-          {/* Logo Section */}
+    <>
+      {/* ── Brand Bar (static, part of page flow) ── */}
+      <div className="relative z-40 border-b border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-950">
+        <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
+          {/* Logo */}
           <Link
             href="/"
             className="flex items-center gap-2 font-bold text-lg hover:scale-105 transition-transform duration-200 shrink-0"
@@ -34,63 +35,63 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Center Navigation */}
-          {session && (
-            <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`
-                      flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
-                      transition-all duration-200 hover:scale-105
-                      ${
-                        isActive
-                          ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
-                      }
-                    `}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
-
-          {/* Right Section */}
+          {/* Profile / Sign In */}
           <div className="flex items-center gap-3 shrink-0">
             {status === "loading" ? (
               <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
             ) : session ? (
               <ProfileMenu user={session.user} />
             ) : (
-              <>
-                <Link href="/auth/sign-in">
-                  <Button
-                    size="sm"
-                    className="rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 hover:scale-105 shadow-md"
-                  >
-                    Sign In
-                  </Button>
-                </Link>
-              </>
+              <Link href="/auth/sign-in">
+                <Button
+                  size="sm"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 hover:scale-105 shadow-md"
+                >
+                  Sign In
+                </Button>
+              </Link>
             )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation Bar */}
+      {/* ── Floating Nav Links (desktop) ── */}
       {session && (
-        <div className="lg:hidden pointer-events-auto fixed bottom-4 left-4 right-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-2xl shadow-xl z-50">
+        <div className="hidden lg:flex fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+          <nav className="flex items-center gap-1 px-2 py-1.5 rounded-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                    transition-all duration-200 hover:scale-105
+                    ${
+                      isActive
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+                    }
+                  `}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+
+      {/* ── Mobile Navigation Bar (bottom) ── */}
+      {session && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-2xl shadow-xl z-50">
           <nav className="flex items-center justify-around">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
@@ -113,6 +114,6 @@ export default function Navbar() {
           </nav>
         </div>
       )}
-    </div>
+    </>
   );
 }
