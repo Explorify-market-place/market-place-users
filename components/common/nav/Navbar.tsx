@@ -57,7 +57,7 @@ export default function Navbar() {
 
       {/* ── Floating Nav Links (desktop) ── */}
       {session && (
-        <div className="hidden lg:flex fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+        <div className="flex fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
           <nav className="flex items-center gap-1 px-2 py-1.5 rounded-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -67,7 +67,7 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={`
-                    flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                    flex items-center gap-2 px-3 py-2 sm:px-4 rounded-full text-sm font-medium
                     transition-all duration-200 hover:scale-105
                     ${
                       isActive
@@ -77,37 +77,7 @@ export default function Navbar() {
                   `}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      )}
-
-      {/* ── Mobile Navigation Bar (bottom) ── */}
-      {session && (
-        <div className="lg:hidden fixed bottom-4 left-4 right-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-2xl shadow-xl z-50">
-          <nav className="flex items-center justify-around">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`
-                    flex flex-col items-center gap-1 p-2 rounded-xl
-                    transition-all duration-200
-                    ${
-                      isActive
-                        ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10"
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                    }
-                  `}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">{item.label}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               );
             })}
