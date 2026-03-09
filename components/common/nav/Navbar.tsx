@@ -55,10 +55,10 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ── Floating Nav Links (desktop) ── */}
+      {/* ── Nav Links (sticky — scrolls below brand bar, then pins to top) ── */}
       {session && (
-        <div className="flex fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-          <nav className="flex items-center gap-1 px-2 py-1.5 rounded-full backdrop-blur-md bg-white/80 dark:bg-slate-950/80 border border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+        <div className="sticky top-0 z-50 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+          <nav className="mx-auto max-w-7xl px-6 flex items-center justify-center gap-1 py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
