@@ -11,8 +11,13 @@ async function resolveOne(url: string): Promise<string> {
 
         const res = await fetch(resolved);
         const data = await res.json();
-        return data.photoUri ?? BROKEN_IMAGE;
-    } catch {
+        if (data.photoUri) return data.photoUri
+        else {
+            console.error("Missing photoUri:", data)
+            return BROKEN_IMAGE
+        }
+    } catch (e) {
+        console.error(e)
         return BROKEN_IMAGE;
     }
 }
