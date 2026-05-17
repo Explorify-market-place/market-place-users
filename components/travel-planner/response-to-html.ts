@@ -7,7 +7,7 @@ renderer.link = ({ href, title, text }) => {
 };
 marked.use({ renderer });
 
-const PLACEHOLDER = "https://placehold.net/default.svg";
+const PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="%23f3f4f6"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite"/></rect></svg>`;
 const PLACES_REGEX = /https:\/\/places\.googleapis\.com\/v1\/[^\s)]+/g;
 
 /**

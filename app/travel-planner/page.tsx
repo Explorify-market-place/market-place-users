@@ -216,12 +216,13 @@ function Dashboard() {
     useEffect(() => {
         if (!isStreaming && ready && tripInput && hasInitiated.current) {
             saveSession();
-            if (!photosResolved.current) {
+            const hasPlanData = plan.hotels.length > 0 || plan.itinerary.length > 0;
+            if (!photosResolved.current && hasPlanData) {
                 photosResolved.current = true;
                 resolvePhotos();
             }
         }
-    }, [isStreaming, ready, tripInput, saveSession, resolvePhotos]);
+    }, [isStreaming, ready, tripInput, saveSession, resolvePhotos, plan.hotels.length, plan.itinerary.length]);
 
     /* ── Handle follow-up messages ── */
     function handleSend(text: string) {
