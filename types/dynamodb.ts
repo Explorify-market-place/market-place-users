@@ -62,7 +62,7 @@ export interface DynamoDBPlan {
   planId: string;
   vendorId: string;
   name: string;
-  images?: string[];
+  images?: string[]; // S3 keys for uploaded images OR public URLs from scraped content
   description: string;
   fullDescription?: string;
   price: number;

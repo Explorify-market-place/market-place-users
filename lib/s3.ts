@@ -42,11 +42,16 @@ export async function generatePresignedUploadUrl(
 }
 
 /**
- * Construct a public S3 URL from a key
- * @param key - The S3 key (e.g., "profile-images/user-123.jpg")
- * @returns Full public S3 URL
+ * Construct a public S3 URL from a key, or return the URL as-is if already public
+ * @param key - The S3 key (e.g., "profile-images/user-123.jpg") or public URL
+ * @returns Full public S3 URL or the original URL
  */
 export function getPublicUrl(key: string): string {
+  // If already a full URL (http:// or https://), return as-is
+  if (key.startsWith('http://') || key.startsWith('https://')) {
+    return key;
+  }
+  // Otherwise, construct S3 URL
   return `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
 }
 
