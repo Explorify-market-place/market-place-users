@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { getPublicUrl } from "@/lib/s3";
 
+// Force dynamic rendering to always fetch fresh data instead of caching(caching leads to fetching stale data when plan goes from inactive to active)
+// other option is to export const revalidate = time in seconds
+// or rel=validatepath = '/trips' to revalidate only this page when a new plan is added or existing plan is updated by vendor
+
+// TODO: rebuild and refactor trips page with better frontend and implement whatever option above feels best 
+export const dynamic = 'force-dynamic';
+
 export default async function TripsPage() {
   const plans = await getAllActivePlans();
 
