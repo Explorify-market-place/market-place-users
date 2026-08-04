@@ -1,0 +1,440 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <style>
+        @layer base {
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                overscroll-behavior: none;
+            }
+
+            main>:first-child {
+                margin-top: 0 !important;
+            }
+
+            main>:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+        id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container": "#1d1f29", "surface-container-high": "#282933", "surface-tint": "#b8c3ff", "surface-variant": "#32343e", "secondary-fixed": "#f0dbff", "secondary-container": "#6f00be", "tertiary": "#4cd6ff", "tertiary-fixed-dim": "#4cd6ff", "on-tertiary-fixed": "#001f28", "surface-dim": "#11131c", "outline": "#8e90a2", "on-primary-container": "#efefff", "on-error-container": "#ffdad6", "error": "#ffb4ab", "surface-container-lowest": "#0c0e17", "on-secondary": "#490080", "inverse-primary": "#124af0", "surface-bright": "#373943", "tertiary-fixed": "#b7eaff", "on-surface": "#e1e1ef", "on-secondary-container": "#d6a9ff", "inverse-surface": "#e1e1ef", "tertiary-container": "#007792", "on-tertiary-container": "#dbf4ff", "inverse-on-surface": "#2e303a", "on-background": "#e1e1ef", "on-primary": "#002388", "primary-fixed": "#dde1ff", "primary-fixed-dim": "#b8c3ff", "secondary": "#ddb7ff", "background": "#11131c", "outline-variant": "#434656", "primary": "#b8c3ff", "on-secondary-fixed": "#2c0051", "on-primary-fixed": "#001356", "surface-container-low": "#191b24", "surface": "#11131c", "on-secondary-fixed-variant": "#6900b3", "surface-container-highest": "#32343e", "on-primary-fixed-variant": "#0035be", "on-tertiary": "#003543", "secondary-fixed-dim": "#ddb7ff", "on-tertiary-fixed-variant": "#004e60", "on-error": "#690005", "error-container": "#93000a", "primary-container": "#2e5bff", "on-surface-variant": "#c4c5d9" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "sidebar-width": "280px", "margin-desktop": "2.5rem", "stack-gap": "1rem", "container-max-width": "1280px", "gutter": "1.5rem", "margin-mobile": "1rem" }, "fontFamily": { "body-lg": ["JetBrains Mono"], "body-md": ["JetBrains Mono"], "headline-lg-mobile": ["Space Grotesk"], "label-sm": ["JetBrains Mono"], "display-lg": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "headline-lg": ["Space Grotesk"] }, "fontSize": { "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }], "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "600" }], "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }], "display-lg": ["56px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }], "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }] } } } }</script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+</head>
+
+<body class="bg-background font-body-md text-on-surface antialiased">
+    <header
+        class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] border-b border-outline-variant/10">
+        <div
+            class="h-20 max-w-container-max-width mx-auto px-margin-mobile lg:px-margin-desktop flex items-center justify-between">
+            <div class="flex items-center gap-12">
+                <div class="flex items-center gap-2"><span
+                        class="material-symbols-outlined text-primary text-[32px]">rocket_launch</span><span
+                        class="font-headline-md text-headline-md text-primary tracking-tight">MIDNIGHT</span></div>
+                <nav class="hidden lg:flex items-center gap-8 h-20"
+                    data-active-classes="text-primary border-b-2 border-primary"><a aria-current="page"
+                        class="font-label-sm uppercase tracking-widest transition-all flex items-center h-full text-primary border-b-2 border-primary"
+                        data-path="browse-trips" href="#">Browse Trips</a><a
+                        class="text-label-sm font-label-sm uppercase tracking-widest text-on-surface-variant hover:text-primary transition-all flex items-center h-full border-b-2 border-transparent"
+                        data-path="travel-planner" href="#">Travel Planner</a><a
+                        class="text-label-sm font-label-sm uppercase tracking-widest text-on-surface-variant hover:text-primary transition-all flex items-center h-full border-b-2 border-transparent"
+                        data-path="my-bookings" href="#">My Bookings</a></nav>
+            </div>
+            <div class="flex items-center gap-6"><button
+                    class="text-on-surface-variant hover:text-tertiary transition-colors"><span
+                        class="material-symbols-outlined">search</span></button>
+                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span
+                        class="material-symbols-outlined text-on-primary text-[18px]">person</span></div>
+            </div>
+        </div>
+    </header>
+    <main class="w-full pt-20 bg-background min-h-screen">
+        <div class="flex flex-col w-full">
+            <!-- Interactive Background Element -->
+            <div class="fixed inset-0 pointer-events-none opacity-20 overflow-hidden z-0">
+
+                <div
+                    class="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[120px] rounded-full animate-pulse">
+                </div>
+                <div class="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/20 blur-[100px] rounded-full animate-pulse"
+                    style="animation-delay: 2s"></div>
+            </div>
+            <div
+                class="relative z-10 max-w-container-max-width mx-auto px-margin-mobile lg:px-margin-desktop w-full py-12">
+                <!-- Header Section -->
+                <div class="flex flex-col items-center text-center gap-6 mb-16">
+                    <div class="flex flex-col items-center">
+                        <span class="font-label-sm text-label-sm text-tertiary tracking-[0.4em] uppercase mb-4">Midnight
+                            Expeditions</span>
+                        <h1 class="font-display-lg text-display-lg text-on-surface max-w-3xl">
+                            Explore <span class="text-primary italic">Amazing</span><br />
+                            <span
+                                class="bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-tertiary">Destinations</span>
+                        </h1>
+                        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mt-6">
+                            Discover handpicked travel experiences curated just for those who seek the extraordinary in
+                            the unknown.
+                        </p>
+                    </div>
+                    <!-- Main Search Bar -->
+                    <div class="w-full max-w-3xl mt-8">
+                        <div
+                            class="bg-surface-container-high/60 backdrop-blur-xl p-2 rounded-2xl flex items-center gap-4 shadow-2xl border border-outline-variant/10">
+                            <div class="flex-1 flex items-center px-4 gap-3">
+                                <span class="material-symbols-outlined text-primary">search</span>
+                                <input
+                                    class="bg-transparent border-none focus:ring-0 text-on-surface font-body-md w-full placeholder:text-on-surface-variant/50"
+                                    placeholder="Where do you want to orbit?" type="text" />
+                            </div>
+                            <div class="h-10 w-[1px] bg-outline-variant/20 hidden md:block"></div>
+                            <div class="hidden md:flex items-center px-4 gap-3">
+                                <span class="material-symbols-outlined text-tertiary">calendar_month</span>
+                                <span class="text-on-surface font-body-md whitespace-nowrap">Select Dates</span>
+                            </div>
+                            <button
+                                class="bg-primary text-on-primary px-8 py-3 rounded-xl font-label-sm uppercase tracking-widest hover:scale-[1.02] transition-transform active:scale-95 shadow-lg shadow-primary/20">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col lg:flex-row gap-gutter">
+                    <!-- Sidebar Filters -->
+                    <aside class="w-full lg:w-sidebar-width shrink-0">
+                        <div
+                            class="sticky top-28 flex flex-col gap-8 bg-surface-container/40 backdrop-blur-md p-6 rounded-2xl border border-outline-variant/5">
+                            <div>
+                                <h3
+                                    class="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-[18px]">filter_list</span> Filters
+                                </h3>
+                                <!-- Price Range -->
+                                <div class="flex flex-col gap-4 mb-8">
+                                    <label
+                                        class="font-label-sm text-on-surface uppercase text-[10px] tracking-wider opacity-60">Price
+                                        Range</label>
+                                    <input
+                                        class="w-full accent-primary bg-surface-container-highest rounded-lg appearance-none h-1 cursor-pointer"
+                                        type="range" />
+                                    <div class="flex justify-between font-label-sm text-on-surface-variant text-[11px]">
+                                        <span>₹1,000</span>
+                                        <span>₹50,000+</span>
+                                    </div>
+                                </div>
+                                <!-- Destination Type -->
+                                <div class="flex flex-col gap-4 mb-8">
+                                    <label
+                                        class="font-label-sm text-on-surface uppercase text-[10px] tracking-wider opacity-60">Destination
+                                        Type</label>
+                                    <div class="flex flex-col gap-3">
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <div
+                                                class="w-5 h-5 rounded border border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
+                                                <div
+                                                    class="w-2.5 h-2.5 bg-primary rounded-sm opacity-0 transition-opacity">
+                                                </div>
+                                            </div>
+                                            <span
+                                                class="font-body-md text-on-surface-variant group-hover:text-on-surface">Mountains</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <div
+                                                class="w-5 h-5 rounded border border-primary flex items-center justify-center transition-colors">
+                                                <div
+                                                    class="w-2.5 h-2.5 bg-primary rounded-sm opacity-100 transition-opacity">
+                                                </div>
+                                            </div>
+                                            <span class="font-body-md text-on-surface">Beaches</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <div
+                                                class="w-5 h-5 rounded border border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
+                                                <div
+                                                    class="w-2.5 h-2.5 bg-primary rounded-sm opacity-0 transition-opacity">
+                                                </div>
+                                            </div>
+                                            <span
+                                                class="font-body-md text-on-surface-variant group-hover:text-on-surface">Urban
+                                                Cities</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- Duration -->
+                                <div class="flex flex-col gap-4">
+                                    <label
+                                        class="font-label-sm text-on-surface uppercase text-[10px] tracking-wider opacity-60">Duration</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button
+                                            class="px-3 py-2 bg-surface-container-high rounded-lg text-label-sm text-on-surface-variant hover:text-primary transition-colors border border-transparent hover:border-primary/30 text-[10px]">1-3
+                                            DAYS</button>
+                                        <button
+                                            class="px-3 py-2 bg-primary/10 rounded-lg text-label-sm text-primary border border-primary/30 text-[10px]">4-7
+                                            DAYS</button>
+                                        <button
+                                            class="px-3 py-2 bg-surface-container-high rounded-lg text-label-sm text-on-surface-variant hover:text-primary transition-colors border border-transparent hover:border-primary/30 text-[10px]">8-14
+                                            DAYS</button>
+                                        <button
+                                            class="px-3 py-2 bg-surface-container-high rounded-lg text-label-sm text-on-surface-variant hover:text-primary transition-colors border border-transparent hover:border-primary/30 text-[10px]">15+
+                                            DAYS</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                class="w-full py-3 bg-surface-variant text-on-surface font-label-sm rounded-xl hover:bg-surface-bright transition-colors uppercase tracking-widest text-[11px]">Clear
+                                All</button>
+                        </div>
+                    </aside>
+                    <!-- Grid Content -->
+                    <main class="flex-1">
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <!-- Card 1: Fitoor-E-Kashmir -->
+                            <div
+                                class="group flex flex-col bg-surface-container-low rounded-[32px] overflow-hidden shadow-xl hover:shadow-primary/5 transition-all duration-500 border border-outline-variant/5">
+                                <div class="relative h-[280px] overflow-hidden">
+                                    <img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        data-alt="A collage illustration of Kashmir landmarks including Dal Lake houseboats, snowy peaks, and intricate pattern work in a vibrant flat vector style with teal, yellow, and red colors. High-contrast travel poster aesthetic."
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8i51GhqfxQyic-wIA8-xCLkYWi97bnl4vTTgWsaYzFTl8PsN6XH9ZseQKmCqL-JhFLzklyrO7EfrDCFSWVA_ZLrpN8Z7UsNPwBO9LS_jBrQNbLSCWF501cXFlYjuZ54K16zkHrzqiY1wFEr5yQEBTllTpL_vOqmmAALdvPQj-BKmS6tTmeP48DaFzXHVyXOcj85cU5J51pNx8kQ6Pi4QMZ3Ybd5vZSUOTDL1PighE5U6aymMqlq0Np7zSkLpBX7w1DohUtqCgxKo" />
+                                    <div
+                                        class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent">
+                                    </div>
+                                    <div
+                                        class="absolute top-6 right-6 px-4 py-1.5 bg-background/80 backdrop-blur-md rounded-full border border-outline-variant/20 flex items-center gap-2">
+                                        <span
+                                            class="material-symbols-outlined text-[16px] text-tertiary">schedule</span>
+                                        <span class="font-label-sm text-on-surface text-[12px]">7 DAYS</span>
+                                    </div>
+                                    <div class="absolute bottom-6 left-8">
+                                        <div class="flex items-center gap-2 text-tertiary mb-2">
+                                            <span class="material-symbols-outlined text-[18px]">location_on</span>
+                                            <span class="font-label-sm text-[11px] uppercase tracking-widest">Kashmir,
+                                                India</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-8 flex flex-col gap-6">
+                                    <div class="flex flex-col gap-2">
+                                        <h2
+                                            class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+                                            Fitoor-E-Kashmir (Strangers)</h2>
+                                        <p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">A
+                                            community-focused group trip to Kashmir, often called Paradise on Earth.
+                                            Designed for solo travelers and friend groups alike.</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span
+                                            class="px-3 py-1 bg-primary/10 text-primary rounded-md font-label-sm text-[10px] uppercase tracking-wider">Guided
+                                            Tours</span>
+                                        <span
+                                            class="px-3 py-1 bg-secondary/10 text-secondary rounded-md font-label-sm text-[10px] uppercase tracking-wider">Cultural</span>
+                                        <span
+                                            class="px-3 py-1 bg-tertiary/10 text-tertiary rounded-md font-label-sm text-[10px] uppercase tracking-wider">Houseboat</span>
+                                    </div>
+                                    <ul class="flex flex-col gap-3">
+                                        <li
+                                            class="flex items-center gap-3 text-on-surface-variant font-body-md text-sm">
+                                            <span
+                                                class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                                            <span>Community experience with strangers</span>
+                                        </li>
+                                        <li
+                                            class="flex items-center gap-3 text-on-surface-variant font-body-md text-sm">
+                                            <span
+                                                class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                                            <span>Stay in a Deluxe Houseboat</span>
+                                        </li>
+                                    </ul>
+                                    <div
+                                        class="flex items-end justify-between mt-4 pt-6 border-t border-outline-variant/10">
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="text-[10px] font-label-sm text-on-surface-variant uppercase tracking-widest">Starting
+                                                from</span>
+                                            <span class="font-body-lg text-[24px] text-primary font-bold">₹11,999</span>
+                                        </div>
+                                        <button
+                                            class="bg-primary/10 hover:bg-primary text-primary hover:text-on-primary px-8 py-3 rounded-2xl transition-all font-label-sm uppercase tracking-widest text-[12px] border border-primary/20">
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Card 2: Pachmarhi Scenic -->
+                            <div
+                                class="group flex flex-col bg-surface-container-low rounded-[32px] overflow-hidden shadow-xl hover:shadow-secondary/5 transition-all duration-500 border border-outline-variant/5">
+                                <div class="relative h-[280px] overflow-hidden">
+                                    <img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        data-alt="Vibrant graphic travel illustration of Pachmarhi hill station featuring green plateaus, waterfalls, and silhouettes of paragliders. Bright teal and magenta color palette with retro travel charm and modern clean lines."
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5rHFJzkV-7Dbw0mF_HN1tWOsQNFHV7Ix3vITsefb33Q0YVTl4mHXlZX65q0f77F7jGC-JUtp-vbzqqyB-pttBGJ9z6Wbr8jY59liVWVOLrrYlWwIvUUjg7VAr15LMEp_0vdredwarXi3Hc_hAxCGOV0ugh8103IW_0HxrBNEFEcUI9mognF0KB_3ImshqSKKOCtLEn-M-w8XAbewwoLd_5f9G73iMhR0udvUJttQ035KoIPx9XjgbdxSeQ5ZrXW8axaZeQBfi50w" />
+                                    <div
+                                        class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-transparent to-transparent">
+                                    </div>
+                                    <div
+                                        class="absolute top-6 right-6 px-4 py-1.5 bg-background/80 backdrop-blur-md rounded-full border border-outline-variant/20 flex items-center gap-2">
+                                        <span
+                                            class="material-symbols-outlined text-[16px] text-secondary">schedule</span>
+                                        <span class="font-label-sm text-on-surface text-[12px]">4 DAYS</span>
+                                    </div>
+                                    <div class="absolute bottom-6 left-8">
+                                        <div class="flex items-center gap-2 text-secondary mb-2">
+                                            <span class="material-symbols-outlined text-[18px]">location_on</span>
+                                            <span class="font-label-sm text-[11px] uppercase tracking-widest">Madhya
+                                                Pradesh, India</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-8 flex flex-col gap-6">
+                                    <div class="flex flex-col gap-2">
+                                        <h2
+                                            class="font-headline-md text-headline-md text-on-surface group-hover:text-secondary transition-colors line-clamp-1">
+                                            Pachmarhi Scenic Hill Station</h2>
+                                        <p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">
+                                            Explore the lush natural beauty and peaceful mountain views of Pachmarhi,
+                                            the queen of Satpura range.</p>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span
+                                            class="px-3 py-1 bg-secondary/10 text-secondary rounded-md font-label-sm text-[10px] uppercase tracking-wider">Nature</span>
+                                        <span
+                                            class="px-3 py-1 bg-tertiary/10 text-tertiary rounded-md font-label-sm text-[10px] uppercase tracking-wider">Trekking</span>
+                                        <span
+                                            class="px-3 py-1 bg-primary/10 text-primary rounded-md font-label-sm text-[10px] uppercase tracking-wider">Mountains</span>
+                                    </div>
+                                    <ul class="flex flex-col gap-3">
+                                        <li
+                                            class="flex items-center gap-3 text-on-surface-variant font-body-md text-sm">
+                                            <span
+                                                class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                                            <span>Best seller trip</span>
+                                        </li>
+                                        <li
+                                            class="flex items-center gap-3 text-on-surface-variant font-body-md text-sm">
+                                            <span
+                                                class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+                                            <span>Expert-curated itinerary</span>
+                                        </li>
+                                    </ul>
+                                    <div
+                                        class="flex items-end justify-between mt-4 pt-6 border-t border-outline-variant/10">
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="text-[10px] font-label-sm text-on-surface-variant uppercase tracking-widest">Starting
+                                                from</span>
+                                            <span
+                                                class="font-body-lg text-[24px] text-secondary font-bold">₹4,999</span>
+                                        </div>
+                                        <button
+                                            class="bg-secondary/10 hover:bg-secondary text-secondary hover:text-on-secondary px-8 py-3 rounded-2xl transition-all font-label-sm uppercase tracking-widest text-[12px] border border-secondary/20">
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Featured Map Section -->
+                        <div class="mt-16 bg-surface-container/30 rounded-[32px] p-8 border border-outline-variant/5">
+                            <div class="flex justify-between items-center mb-8">
+                                <h3 class="font-headline-md text-on-surface">Explore Map View</h3>
+                                <button
+                                    class="text-tertiary font-label-sm uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity">
+                                    Expand Map <span class="material-symbols-outlined">open_in_full</span>
+                                </button>
+                            </div>
+                            <div class="w-full h-80 rounded-2xl bg-surface-container-high relative overflow-hidden grayscale contrast-125 opacity-70 hover:grayscale-0 transition-all duration-1000 cursor-crosshair shadow-inner"
+                                data-location="India Travel Hub"
+                                style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD5LCG_VXGJPCCCk1WKfGTb2-8a5GvJx_htSj94PRK5F0M0lvQBj9fRrmnktKyp-LUZwa6_hQcyr84GuTitTLul-c8K3VzRu4XjrCqEZu3k_qDDYoSEQQiNR8x8EDfus562ni9-J6_HQa4ol_rI6qI-yENfWnru3BI3eOT0g6K6TJGyP1R2Hw2QXj7aWrq6pFD9Crv7yAnDrfkAFQhw5LyWqgDbGrqQra5At-4bETxFopdeRLjrBK-Yo64-oxOMuxWGUts0vSXDYWc')">
+                                <div class="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+                                <!-- Custom map marker simulation -->
+                                <div class="absolute top-1/3 left-1/4 animate-bounce">
+                                    <span class="material-symbols-outlined text-primary text-[32px]">location_on</span>
+                                </div>
+                                <div class="absolute bottom-1/4 right-1/3 animate-bounce" style="animation-delay: 0.5s">
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[32px]">location_on</span>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+        <script>
+            // Add simple hover effect for map markers and filters
+            document.querySelectorAll('[data-location]').forEach(map => {
+                map.addEventListener('mousemove', (e) => {
+                    const rect = map.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    map.style.backgroundPosition = `${x}% ${y}%`;
+                });
+            });
+
+            // Smooth scroll for internal links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        </script>
+    </main>
+    <footer class="w-full bg-surface-container-low py-16 border-t border-outline-variant/10">
+        <div
+            class="max-w-container-max-width mx-auto px-margin-mobile lg:px-margin-desktop grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-2"><span
+                        class="material-symbols-outlined text-primary">rocket_launch</span><span
+                        class="font-headline-md text-headline-md text-primary tracking-tight">MIDNIGHT</span></div>
+                <p class="text-on-surface-variant font-body-md text-body-md">Curating otherworldly experiences for the
+                    modern explorer. Join the expedition into the unknown.</p>
+            </div>
+            <div class="flex flex-col gap-4">
+                <h4 class="text-primary font-label-sm uppercase tracking-widest">Quick Links</h4>
+                <nav class="flex flex-col gap-2"><a
+                        class="text-on-surface-variant hover:text-tertiary text-body-md font-body-md transition-colors"
+                        href="#">About Us</a><a
+                        class="text-on-surface-variant hover:text-tertiary text-body-md font-body-md transition-colors"
+                        href="#">Terms of Service</a><a
+                        class="text-on-surface-variant hover:text-tertiary text-body-md font-body-md transition-colors"
+                        href="#">Support</a></nav>
+            </div>
+            <div class="flex flex-col gap-4">
+                <h4 class="text-primary font-label-sm uppercase tracking-widest">Newsletter</h4>
+                <div class="flex gap-2"><input
+                        class="bg-surface-container-high border border-outline-variant/20 rounded-lg px-4 py-2 text-on-surface w-full focus:outline-none focus:border-primary"
+                        placeholder="Enter orbit..." type="text" /><button
+                        class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold">JOIN</button></div>
+            </div>
+        </div>
+        <div
+            class="max-w-container-max-width mx-auto px-margin-mobile lg:px-margin-desktop mt-12 pt-8 border-t border-outline-variant/10 flex justify-between items-center text-on-surface-variant text-label-sm font-label-sm">
+            <p>© 2024 MIDNIGHT EXPEDITION. ALL SYSTEMS GO.</p>
+            <div class="flex gap-4"><span
+                    class="material-symbols-outlined cursor-pointer hover:text-tertiary">public</span><span
+                    class="material-symbols-outlined cursor-pointer hover:text-tertiary">shield</span></div>
+        </div>
+    </footer>
+</body>
+
+</html>
